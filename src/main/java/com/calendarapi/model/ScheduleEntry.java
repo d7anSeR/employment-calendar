@@ -13,17 +13,27 @@ public class ScheduleEntry {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "employee_id", nullable = false)
-    private String employeeId;
+    @Column(name = "employee_name", nullable = false)
+    private String employeeName;
 
-    @Column(name = "task", nullable = false)
-    private String task;
+    @Column(name = "task_name", nullable = false)
+    private String taskName;
 
-    @Column(name = "start_date", nullable = false)
+    @Column(name = "task_description")
+    private String taskDescription;
+
+    @Column(name = "counterparty", nullable = false)
+    private String counterparty;
+
+    @Column(name = "date_accept", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime dateAccept;
+
+    @Column(name = "start_date")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startDate;
 
-    @Column(name = "end_date", nullable = false)
+    @Column(name = "end_date")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endDate;
 
@@ -33,8 +43,12 @@ public class ScheduleEntry {
     @Column(name = "priority")
     private String priority;
 
-    public void setEmployeeId(String employeeId) {
-        this.employeeId = employeeId;
+    public void setEmployeeId(String employeeName) {
+        this.employeeName = employeeName;
+    }
+
+    public void setDateAccept(LocalDateTime dateAccept) {
+        this.dateAccept = dateAccept;
     }
 
     public void setStart(LocalDateTime start) {
@@ -45,24 +59,36 @@ public class ScheduleEntry {
         this.endDate = end;
     }
 
-    public void setTask(String task) {
-        this.task = task;
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
+
+    public void setTaskDescription(String taskDescription) {
+        this.taskDescription = taskDescription;
     }
 
     public void setPriority(String priority) {
         this.priority = priority;
     }
 
-    public String getPriority() {
-        return priority;
-    }
-
     public void setStatus(String status) {
         this.status = status;
     }
 
-    public String getEmployeeId() {
-        return employeeId;
+    public void setCounterparty(String counterparty) {
+        this.counterparty = counterparty;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public String getEmployeeName() {
+        return employeeName;
+    }
+
+    public LocalDateTime getDateAccept() {
+        return dateAccept;
     }
 
     public LocalDateTime getStart() {
@@ -73,8 +99,16 @@ public class ScheduleEntry {
         return endDate;
     }
 
-    public String getTask() {
-        return task;
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public String getTaskDescription() {
+        return taskDescription;
+    }
+
+    public String getCounterparty() {
+        return counterparty;
     }
 
     public String getStatus() {
