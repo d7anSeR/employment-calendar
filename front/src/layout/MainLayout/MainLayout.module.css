@@ -1,0 +1,19 @@
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+.sidebar {
+  padding: 30px;
+  border-right: 1px solid gray;
+  display: flex;
+  flex-direction: column;
+}
+.calendar {
+  height: 200px;
+  width: 200px;
+  border: 1px solid white;
+}
+.content {
+  padding: 40px 60px;
+  width: 100%;
+}
