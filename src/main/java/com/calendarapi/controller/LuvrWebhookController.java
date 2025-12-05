@@ -8,7 +8,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -39,4 +41,30 @@ public class LuvrWebhookController {
             return new ApiResponse<>(false, "Ошибка при сохранении: " + e.getMessage());
         }
     }
+
+    @GetMapping("/user/{employeeName}")
+    public ApiResponse<List<ScheduleEntry>> getByEmployee(@PathVariable String employeeName) {
+        List<ScheduleEntry> tasks = repository.findByEmployeeName(employeeName);
+        return new ApiResponse<>(true, "Задачи сотрудника получены", tasks);
+    }
+
+    @GetMapping("/date/{date}")
+    public ApiResponse<List<ScheduleEntry>> getByDate(@PathVariable String date) {
+        LocalDateTime startOfDay = LocalDateTime.parse(date + "T00:00:00");
+        LocalDateTime endOfDay = LocalDateTime.parse(date + "T23:59:59");
+
+        List<ScheduleEntry> tasks = repository.findByStartDateBetween(startOfDay, endOfDay);
+        return new ApiResponse<>(true, "Задачи за день получены", tasks);
+    }
+
+    @GetMapping("/user/{employeeName}/date/{date}")
+    public ApiResponse<List<ScheduleEntry>> getByUserAndDate(@PathVariable String employeeName,
+                                                             @PathVariable String date) {
+        LocalDateTime startOfDay = LocalDateTime.parse(date + "T00:00:00");
+        LocalDateTime endOfDay = LocalDateTime.parse(date + "T23:59:59");
+
+        List<ScheduleEntry> tasks = repository.findByEmployeeNameAndStartDateBetween(employeeName, startOfDay, endOfDay);
+        return new ApiResponse<>(true, "Задачи сотрудника за день получены", tasks);
+    }
+
 }
