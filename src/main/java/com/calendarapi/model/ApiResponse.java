@@ -2,11 +2,10 @@ package com.calendarapi.model;
 
 
 public class ApiResponse<T> {
-    private boolean success;  // Статус запроса: true — успешно, false — ошибка
-    private String message;   // Сообщение для клиента
-    private T data;           // Данные (например, расписание сотрудников)
+    private boolean success;
+    private String message;
+    private T data;
 
-    // Конструкторы
     public ApiResponse() {}
 
     public ApiResponse(boolean success, String message, T data) {
@@ -19,7 +18,6 @@ public class ApiResponse<T> {
         this(success, message, null);
     }
 
-    // Геттеры и сеттеры
     public boolean isSuccess() { return success; }
     public void setSuccess(boolean success) { this.success = success; }
 
@@ -29,4 +27,3 @@ public class ApiResponse<T> {
     public T getData() { return data; }
     public void setData(T data) { this.data = data; }
 }
-
