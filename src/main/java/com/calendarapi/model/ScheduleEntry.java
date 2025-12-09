@@ -9,15 +9,15 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "schedule_entry") // имя таблицы
+@Table(name = "schedule_entry")
 public class ScheduleEntry {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "employee_name")
-    @NotBlank(message = "Поле для идентификации сотрудника обязательно")
-    private String employeeName;
+    @Column(name = "employee_id")
+    @NotNull(message = "Поле для идентификации сотрудника обязательно")
+    private Long employeeId;
 
     @Column(name = "task_name")
     private String taskName;
@@ -32,25 +32,25 @@ public class ScheduleEntry {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startDate;
 
-    @Column(name = "number_task", nullable = false)
+    @Column(name = "task_id", nullable = false)
     @NotNull(message = "Поле номера заявки обязательно")
-    private Long numberTask;
+    private Long taskId;
 
     @Column(name = "end_date")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endDate;
 
     @Column(name = "status")
-    private int status;
+    private int status = 1;
 
     @Column(name = "priority")
-    private int priority;
+    private int priority = 1;
 
     @Column(name = "view_task", nullable = false)
     private String viewTask = "общая";
 
-    public void setEmployeeName(String employeeName) {
-        this.employeeName = employeeName;
+    public void setEmployeeId(Long employeeId) {
+        this.employeeId = employeeId;
     }
 
     public void setStart(LocalDateTime start) {
@@ -65,8 +65,8 @@ public class ScheduleEntry {
         this.taskName = taskName;
     }
 
-    public void setNumberTask(Long numberTask) {
-        this.numberTask = numberTask;
+    public void setTaskId(Long taskId) {
+        this.taskId = taskId;
     }
 
     public void setTaskDescription(String taskDescription) {
@@ -93,8 +93,8 @@ public class ScheduleEntry {
         return priority;
     }
 
-    public String getEmployeeName() {
-        return employeeName;
+    public Long getEmployeeId() {
+        return employeeId;
     }
 
     public LocalDateTime getStart() {
@@ -121,8 +121,8 @@ public class ScheduleEntry {
         return status;
     }
 
-    public Long getNumberTask() {
-        return numberTask;
+    public Long getTaskId() {
+        return taskId;
     }
 
     public String getViewTask() {

@@ -11,4 +11,3 @@ public class CalendarApiApplication {
         SpringApplication.run(CalendarApiApplication.class, args);
     }
 }
-

@@ -1,5 +1,6 @@
 package com.calendarapi.controller;
 
+import com.calendarapi.dto.ScheduleUpdateRequest;
 import com.calendarapi.model.ApiResponse;
 import com.calendarapi.model.ScheduleEntry;
 import com.calendarapi.repository.ScheduleEntryRepository;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/webhook")
@@ -42,9 +44,9 @@ public class LuvrWebhookController {
         }
     }
 
-    @GetMapping("/user/{employeeName}")
-    public ApiResponse<List<ScheduleEntry>> getByEmployee(@PathVariable String employeeName) {
-        List<ScheduleEntry> tasks = repository.findByEmployeeName(employeeName);
+    @GetMapping("/user/{employeeId}")
+    public ApiResponse<List<ScheduleEntry>> getByEmployee(@PathVariable Long employeeId) {
+        List<ScheduleEntry> tasks = repository.findByEmployeeId(employeeId);
         return new ApiResponse<>(true, "Задачи сотрудника получены", tasks);
     }
 
@@ -57,14 +59,68 @@ public class LuvrWebhookController {
         return new ApiResponse<>(true, "Задачи за день получены", tasks);
     }
 
-    @GetMapping("/user/{employeeName}/date/{date}")
-    public ApiResponse<List<ScheduleEntry>> getByUserAndDate(@PathVariable String employeeName,
+    @GetMapping("/user/{employeeId}/date/{date}")
+    public ApiResponse<List<ScheduleEntry>> getByUserAndDate(@PathVariable Long employeeId,
                                                              @PathVariable String date) {
         LocalDateTime startOfDay = LocalDateTime.parse(date + "T00:00:00");
         LocalDateTime endOfDay = LocalDateTime.parse(date + "T23:59:59");
 
-        List<ScheduleEntry> tasks = repository.findByEmployeeNameAndStartDateBetween(employeeName, startOfDay, endOfDay);
+        List<ScheduleEntry> tasks = repository.findByEmployeeIdAndStartDateBetween(employeeId, startOfDay, endOfDay);
         return new ApiResponse<>(true, "Задачи сотрудника за день получены", tasks);
+    }
+
+    @PatchMapping("/schedule/task/{taskId}")
+    public ApiResponse<?> updateTaskByTaskId(
+            @PathVariable Long taskId,
+            @RequestBody ScheduleUpdateRequest request
+    ) {
+        try {
+            ScheduleEntry task = repository.findByTaskId(taskId)
+                    .orElseThrow(() -> new RuntimeException("Задача с taskId=" + taskId + " не найдена"));
+
+
+            if (!(Objects.equals(task.getViewTask(), "личная"))) {
+                return new ApiResponse<>(false, "Задача не может быть обновлена: она не личная");
+            }
+
+            if (request.getTaskName() != null) task.setTaskName(request.getTaskName());
+            if (request.getTaskDescription() != null) task.setTaskDescription(request.getTaskDescription());
+            if (request.getStatus() != null) task.setStatus(request.getStatus());
+            if (request.getPriority() != null) task.setPriority(request.getPriority());
+            if (request.getCounterparty() != null) task.setCounterparty(request.getCounterparty());
+            if (request.getEmployeeId() != null) task.setEmployeeId(request.getEmployeeId());
+            if (request.getStartDate() != null) task.setStart(request.getStartDate());
+            if (request.getEndDate() != null) task.setEnd(request.getEndDate());
+
+            repository.save(task);
+
+            return new ApiResponse<>(true, "Задача обновлена по taskId", task);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Ошибка обновления: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/schedule/task/{taskId}")
+    public ApiResponse<?> deleteTaskByTaskId(
+            @PathVariable Long taskId,
+            @RequestParam Long employeeId
+    ) {
+        try {
+            ScheduleEntry task = repository.findByTaskId(taskId)
+                    .orElseThrow(() -> new RuntimeException("Задача с taskId=" + taskId + " не найдена"));
+
+            if (!task.getEmployeeId().equals(employeeId)) {
+                return new ApiResponse<>(false, "Удаление невозможно: задача не принадлежит указанному сотруднику");
+            }
+
+            if (!(Objects.equals(task.getViewTask(), "личная"))) {
+                return new ApiResponse<>(false, "Задача не может быть удалена: она не личная");
+            }
+            repository.delete(task);
+            return new ApiResponse<>(true, "Задача успешно удалена");
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Ошибка удаления: " + e.getMessage());
+        }
     }
 
 }

@@ -5,11 +5,13 @@ public class Employee {
     private String id;
     private String name;
     private String email;
+    private String password;
 
-    public Employee(String id, String name, String email) {
+    public Employee(String id, String name, String email, String password) {
         this.id = id;
         this.name = name;
         this.email = email;
+        this.password = password;
     }
 
     public String getId() {
@@ -24,6 +26,11 @@ public class Employee {
         return email;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+
     public void setId(String id) {
         this.id = id;
     }
@@ -34,5 +41,9 @@ public class Employee {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
