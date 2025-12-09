@@ -1,0 +1,109 @@
+.calendar-list {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.calendar-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.calendar-list-header:hover {
+  background-color: lightgray;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-icon {
+  color: #5f6368;
+  transition: transform;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.calendar-list-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+}
+
+.calendar-list-count {
+  font-size: 12px;
+  color: #5f6368;
+}
+
+.calendar-list-content {
+  padding: 0 8px 8px 8px;
+}
+
+.calendar-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  user-select: none;
+}
+
+.calendar-item:hover {
+  background-color: #f8f9fa;
+}
+
+.checkbox-container {
+  position: relative;
+  margin-right: 8px;
+}
+
+.checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 2px solid;
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+.checkmark svg {
+  width: 12px;
+  height: 12px;
+}
+
+.calendar-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.calendar-name {
+  font-size: 13px;
+  color: #3c4043;
+  flex: 1;
+}
+.expand-icon {
+  transition: transform;
+}

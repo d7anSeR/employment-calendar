@@ -1,0 +1,99 @@
+.calendar-widget {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  width: 240px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.current-month {
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  color: #5f6368;
+}
+
+.nav-button:hover {
+  background-color: #f1f3f4;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 12px;
+}
+
+.day-header {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #70757a;
+  padding: 4px;
+}
+
+.day-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+}
+
+.day-cell:hover:not(.other-month) {
+  background-color: #d2d2d2;
+}
+
+.day-cell.selected {
+  background-color: #1a73e8;
+  color: white;
+}
+
+.day-cell.selected:hover {
+  background-color: #1557b0;
+  color: white;
+}
+
+.day-cell.today:not(.selected) .day-number {
+  display: flex;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(253, 48, 48, 0.676);
+  color: white;
+  font-weight: bold;
+}
+
+.day-cell.other-month {
+  color: #dadce0;
+  cursor: default;
+}
+
+.day-number {
+  font-size: 12px;
+  font-weight: 400;
+}

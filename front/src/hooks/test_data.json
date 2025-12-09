@@ -1,0 +1,47 @@
+
+[
+  {
+    "id": 1,
+    "employee_name": "Иван Петров",
+    "task_name": "Разработка API",
+    "task_description": "Создание REST API для модуля пользователей",
+    "counterparty": "ТехноПро",
+    "start_date": "2025-11-04T09:00:00",
+    "end_date": "2025-11-04T11:00:00",
+    "status": "В работе",
+    "priority": "Высокий"
+  },
+  {
+    "id": 2,
+    "employee_name": "Мария Сидорова",
+    "task_name": "Дизайн интерфейса",
+    "task_description": "Проектирование UI/UX для мобильного приложения",
+    "counterparty": "ДизайнСтудия",
+    "start_date": "2025-11-04T09:20:00",
+    "end_date": "2025-11-04T20:30:00",
+    "status": "Запланировано",
+    "priority": "Средний"
+  },
+  {
+    "id": 3,
+    "employee_name": "Алексей Козлов",
+    "task_name": "Тестирование системы",
+    "task_description": "Проведение интеграционного тестирования",
+    "counterparty": "QA Лаб",
+    "start_date": "2025-11-04T09:40:00",
+    "end_date": "2025-11-04T12:00:00",
+    "status": "Завершено",
+    "priority": "Низкий"
+  },
+  {
+    "id": 4,
+    "employee_name": "Елена Новикова",
+    "task_name": "Встреча с клиентом",
+    "task_description": "Обсуждение требований к новому проекту",
+    "counterparty": "ООО Старт",
+    "start_date": "2025-11-04T09:00:00",
+    "end_date": "2025-11-04T15:00:00",
+    "status": "В работе",
+    "priority": "Высокий"
+  }
+]

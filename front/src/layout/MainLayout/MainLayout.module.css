@@ -1,19 +1,203 @@
 .layout {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
+
+/* Контейнер для кнопок в правом верхнем углу сайдбара */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+/* Кнопка логина */
+.auth_button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 25px;
+  border: 1px solid lightgray;
+  padding: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.auth_button:hover {
+  background-color: #f5f5f5;
+  border-color: #40a9ff;
+}
+
+/* Бургер кнопка в сайдбаре */
+.sidebar-burger-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.sidebar-burger-button:hover {
+  background: #f5f5f5;
+  border-color: #40a9ff;
+}
+
+/* Сайдбар */
 .sidebar {
   padding: 30px;
-  border-right: 1px solid gray;
+  border-right: 1px solid #e8e8e8;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  background: white;
+  z-index: 1001;
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
-.calendar {
-  height: 200px;
-  width: 200px;
-  border: 1px solid white;
+
+.sidebar--open {
+  transform: translateX(0);
 }
+
+.sidebar--closed {
+  transform: translateX(-100%);
+}
+
+/* Основной контент */
 .content {
-  padding: 40px 60px;
-  width: 100%;
+  flex: 1;
+  margin-left: 280px;
+  min-height: 100vh;
+  width: calc(100% - 280px);
+  transition: margin-left 0.3s cubic-bezier(0.2, 0, 0, 1);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* При закрытом сайдбаре на мобильных */
+.content--full {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* Адаптивные стили */
+@media (min-width: 1401px) {
+  .sidebar {
+    position: fixed;
+    transform: none !important;
+  }
+
+  .sidebar-burger-button {
+    display: none;
+  }
+
+  .content {
+    margin-left: 280px;
+    width: calc(100% - 280px);
+  }
+}
+
+@media (max-width: 1400px) {
+  .content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .sidebar {
+    position: fixed;
+  }
+}
+
+/* Затемнение фона при открытом сайдбаре на мобильных */
+@media (max-width: 1400px) {
+  .sidebar--open ~ .content::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Остальные стили сайдбара */
+.sidebar__date {
+  display: flex;
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+.sidebar__date-current {
+  margin: 5px 5px 0px 5px;
+}
+
+.calendar {
+  display: flex;
+  height: 270px;
+  width: 230px;
+  margin-bottom: 20px;
+}
+
+.button {
+  max-width: 100px;
+  height: 30px;
+  border: 1px lightgray solid;
+  border-radius: 10px;
+  background-color: #fff;
+  margin: 10px;
+  padding: 0px 10px 0px 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  background-color: lightgray;
+}
+
+.button-with-image {
+  margin: 10px 5px 0 5px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 20px;
+  background-color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.button-with-image:hover {
+  background-color: lightgray;
+}
+
+.show_calendars {
+  display: flex;
 }
