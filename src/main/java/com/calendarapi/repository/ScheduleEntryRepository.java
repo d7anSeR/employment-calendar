@@ -15,10 +15,12 @@ public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Lo
     // Получение задач по имени сотрудника
     List<ScheduleEntry> findByEmployeeId(Long employeeId);
 
+    boolean existsById(Long id);
+
     // Получение задач, которые начинаются в определённый день
     List<ScheduleEntry> findByStartDateBetween(LocalDateTime start, LocalDateTime end);
 
-    Optional<ScheduleEntry> findByTaskId(Long taskId);
+    Optional<ScheduleEntry> findById(Long id);
 
     // Можно также получить задачи по пользователю и дате сразу
     List<ScheduleEntry> findByEmployeeIdAndStartDateBetween(Long employeeId, LocalDateTime start, LocalDateTime end);

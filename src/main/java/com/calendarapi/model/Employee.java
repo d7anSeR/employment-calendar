@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 public class Employee {
 
     @Id
+    @NotNull(message = "Поле id сотрудника обязательно")
     private Long id;
     @Column(name = "name")
     @NotNull(message = "Поле имя сотрудника обязательно")

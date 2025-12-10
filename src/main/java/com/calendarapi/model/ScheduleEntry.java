@@ -3,7 +3,6 @@ package com.calendarapi.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
@@ -12,11 +11,11 @@ import java.time.LocalDateTime;
 @Table(name = "schedule_entry")
 public class ScheduleEntry {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @NotNull(message = "Поле id задачи обязательно")
     private Long id;
 
     @Column(name = "employee_id")
-    @NotNull(message = "Поле для идентификации сотрудника обязательно")
+    //@NotNull(message = "Поле для идентификации сотрудника обязательно")
     private Long employeeId;
 
     @Column(name = "task_name")
@@ -31,10 +30,6 @@ public class ScheduleEntry {
     @Column(name = "start_date")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startDate;
-
-    @Column(name = "task_id", nullable = false)
-    @NotNull(message = "Поле номера заявки обязательно")
-    private Long taskId;
 
     @Column(name = "end_date")
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -53,6 +48,10 @@ public class ScheduleEntry {
         this.employeeId = employeeId;
     }
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public void setStart(LocalDateTime start) {
         this.startDate = start;
     }
@@ -63,10 +62,6 @@ public class ScheduleEntry {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
-    }
-
-    public void setTaskId(Long taskId) {
-        this.taskId = taskId;
     }
 
     public void setTaskDescription(String taskDescription) {
@@ -91,6 +86,10 @@ public class ScheduleEntry {
 
     public int getPriority() {
         return priority;
+    }
+
+    public Long getId() {
+        return id;
     }
 
     public Long getEmployeeId() {
@@ -119,10 +118,6 @@ public class ScheduleEntry {
 
     public int getStatus() {
         return status;
-    }
-
-    public Long getTaskId() {
-        return taskId;
     }
 
     public String getViewTask() {

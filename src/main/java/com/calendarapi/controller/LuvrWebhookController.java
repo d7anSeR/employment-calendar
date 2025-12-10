@@ -2,19 +2,19 @@ package com.calendarapi.controller;
 
 import com.calendarapi.dto.ScheduleUpdateRequest;
 import com.calendarapi.model.ApiResponse;
+import com.calendarapi.model.Employee;
 import com.calendarapi.model.ScheduleEntry;
 import com.calendarapi.repository.EmployeeRepository;
 import com.calendarapi.repository.ScheduleEntryRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/webhook")
@@ -30,7 +30,8 @@ public class LuvrWebhookController {
     }
 
     @PostMapping("/schedule")
-    public ApiResponse<?> receiveSchedule(@Valid @RequestBody ScheduleEntry schedule, BindingResult bindingResult) {
+    public ApiResponse<?> receiveSchedule(@Valid @RequestBody ScheduleEntry schedule, BindingResult bindingResult,
+                                          HttpServletRequest httpRequest) {
         // Проверяем ошибки валидации
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
@@ -41,8 +42,19 @@ public class LuvrWebhookController {
         }
 
         try {
-            if (!employeeRepository.existsById(schedule.getEmployeeId())) {
-                return new ApiResponse<>(false, "Сотрудник с ID " + schedule.getEmployeeId() + " не найден");
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Basic ")) {
+                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
+            }
+            String base64 = authHeader.substring("Basic ".length());
+            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+            String email = decoded.split(":", 2)[0];
+
+            Employee employee = employeeRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+            schedule.setEmployeeId(employee.getId());
+            if (repository.existsById(schedule.getId())) {
+                return new ApiResponse<>(false, "Задача с ID " + schedule.getId() + " уже существует");
             }
             repository.save(schedule); // сохраняем в БД
             return new ApiResponse<>(true, "Данные успешно приняты");
@@ -51,9 +63,12 @@ public class LuvrWebhookController {
         }
     }
 
-    @GetMapping("/user/{employeeId}")
+    @GetMapping("/employee/{employeeId}")
     public ApiResponse<List<ScheduleEntry>> getByEmployee(@PathVariable Long employeeId) {
         List<ScheduleEntry> tasks = repository.findByEmployeeId(employeeId);
+        if (!employeeRepository.existsById(employeeId)) {
+            return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
+        }
         return new ApiResponse<>(true, "Задачи сотрудника получены", tasks);
     }
 
@@ -66,36 +81,44 @@ public class LuvrWebhookController {
         return new ApiResponse<>(true, "Задачи за день получены", tasks);
     }
 
-    @GetMapping("/user/{employeeId}/date/{date}")
-    public ApiResponse<List<ScheduleEntry>> getByUserAndDate(@PathVariable Long employeeId,
+    @GetMapping("/employee/{employeeId}/date/{date}")
+    public ApiResponse<List<ScheduleEntry>> getByEmployeeAndDate(@PathVariable Long employeeId,
                                                              @PathVariable String date) {
         LocalDateTime startOfDay = LocalDateTime.parse(date + "T00:00:00");
         LocalDateTime endOfDay = LocalDateTime.parse(date + "T23:59:59");
-
+        if (!employeeRepository.existsById(employeeId)) {
+            return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
+        }
         List<ScheduleEntry> tasks = repository.findByEmployeeIdAndStartDateBetween(employeeId, startOfDay, endOfDay);
         return new ApiResponse<>(true, "Задачи сотрудника за день получены", tasks);
     }
 
-    @PatchMapping("/schedule/task/{taskId}")
-    public ApiResponse<?> updateTaskByTaskId(
-            @PathVariable Long taskId,
-            @RequestBody ScheduleUpdateRequest request
+    @PatchMapping("/schedule/task/{id}")
+    public ApiResponse<?> updateTaskById(
+            @PathVariable Long id,
+            @RequestBody ScheduleUpdateRequest request,
+            HttpServletRequest httpRequest
     ) {
         try {
-            ScheduleEntry task = repository.findByTaskId(taskId)
-                    .orElseThrow(() -> new RuntimeException("Задача с taskId=" + taskId + " не найдена"));
+            ScheduleEntry task = repository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Задача с id=" + id + " не найдена"));
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Basic ")) {
+                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
+            }
+            String base64 = authHeader.substring("Basic ".length());
+            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+            String email = decoded.split(":", 2)[0];
 
+            Employee employee = employeeRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
 
+            if (!task.getEmployeeId().equals(employee.getId())) {
+                return new ApiResponse<>(false, "Задача не принадлежит этому сотруднику");
+            }
             if (!(Objects.equals(task.getViewTask(), "личная"))) {
                 return new ApiResponse<>(false, "Задача не может быть обновлена: она не личная");
             }
-
-            if (request.getEmployeeId() != null &&
-                    !employeeRepository.existsById(request.getEmployeeId())) {
-
-                return new ApiResponse<>(false, "Сотрудник с ID " + request.getEmployeeId() + " не найден");
-            }
-
 
             if (request.getTaskName() != null) task.setTaskName(request.getTaskName());
             if (request.getTaskDescription() != null) task.setTaskDescription(request.getTaskDescription());
@@ -114,23 +137,28 @@ public class LuvrWebhookController {
         }
     }
 
-    @DeleteMapping("/schedule/task/{taskId}")
-    public ApiResponse<?> deleteTaskByTaskId(
-            @PathVariable Long taskId,
-            @RequestParam Long employeeId
+    @DeleteMapping("/schedule/task/{id}")
+    public ApiResponse<?> deleteTaskById(
+            @PathVariable Long id,
+            HttpServletRequest httpRequest
     ) {
         try {
-            ScheduleEntry task = repository.findByTaskId(taskId)
-                    .orElseThrow(() -> new RuntimeException("Задача с taskId=" + taskId + " не найдена"));
-
-            if (!employeeRepository.existsById(employeeId)) {
-                return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
+            ScheduleEntry task = repository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Задача с id=" + id + " не найдена"));
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Basic ")) {
+                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
             }
+            String base64 = authHeader.substring("Basic ".length());
+            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+            String email = decoded.split(":", 2)[0];
 
-            if (!task.getEmployeeId().equals(employeeId)) {
-                return new ApiResponse<>(false, "Удаление невозможно: задача не принадлежит указанному сотруднику");
+            Employee employee = employeeRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+
+            if (!task.getEmployeeId().equals(employee.getId())) {
+                return new ApiResponse<>(false, "Задача не принадлежит этому сотруднику");
             }
-
             if (!(Objects.equals(task.getViewTask(), "личная"))) {
                 return new ApiResponse<>(false, "Задача не может быть удалена: она не личная");
             }
@@ -139,12 +167,6 @@ public class LuvrWebhookController {
         } catch (Exception e) {
             return new ApiResponse<>(false, "Ошибка удаления: " + e.getMessage());
         }
-    }
-
-    @GetMapping("/users")
-    public ApiResponse<List<ScheduleEntry>> getAllUsers() {
-        List<ScheduleEntry> list = repository.findAll();
-        return new ApiResponse<>(true, "Все пользователи получены", list);
     }
 
 }

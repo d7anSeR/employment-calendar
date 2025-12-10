@@ -16,7 +16,6 @@ public class EmployeeRequest {
         this.password = password;
     }
 
-    // Геттеры и сеттеры
 
     public Long getId() {
         return id;

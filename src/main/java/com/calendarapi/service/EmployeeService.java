@@ -18,22 +18,39 @@ public class EmployeeService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    // Метод для аутентификации
     public boolean authenticate(String email, String rawPassword) {
         return repository.findByEmail(email)
                 .map(employee -> passwordEncoder.matches(rawPassword, employee.getPassword()))
                 .orElse(false);
     }
 
-    // Создание или обновление пользователя
-    public Employee createOrUpdateEmployee(EmployeeRequest request) {
-        Employee employee = repository.findByEmail(request.getEmail())
-                .orElse(new Employee()); // создаём нового, если не найден
+    public Employee createEmployee(EmployeeRequest request) {
+        if (repository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Пользователь с таким email уже существует");
+        }
+        if (repository.findById(request.getId()).isPresent()) {
+            throw new RuntimeException("Пользователь с таким id уже существует");
+        }
 
-        employee.setId(request.getId()); // используем id из запроса
+        Employee employee = new Employee();
+
+        employee.setId(request.getId());
         employee.setName(request.getName());
         employee.setEmail(request.getEmail());
+        employee.setPassword(passwordEncoder.encode(request.getPassword()));
 
+        return repository.save(employee);
+    }
+
+    public Employee updateEmployee(EmployeeRequest request) {
+        Employee employee = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Пользователь с таким email не найден"));
+        if (request.getName() != null && !request.getName().isEmpty()) {
+            employee.setName(request.getName());
+        }
+        if (request.getEmail() != null && !request.getEmail().isEmpty()) {
+            employee.setEmail(request.getEmail());
+        }
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             employee.setPassword(passwordEncoder.encode(request.getPassword()));
         }
@@ -41,4 +58,9 @@ public class EmployeeService {
         return repository.save(employee);
     }
 
+    public void deleteEmployee(EmployeeRequest request) {
+        Employee employee = repository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Пользователь с таким email не найден"));
+        repository.delete(employee);
+    }
 }

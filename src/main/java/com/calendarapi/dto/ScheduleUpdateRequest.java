@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public class ScheduleUpdateRequest {
 
+    private Long id;
     private String taskName;
     private String taskDescription;
     private Integer status;
@@ -12,6 +13,10 @@ public class ScheduleUpdateRequest {
     private Long employeeId;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+
+    public Long getId() {
+        return id;
+    }
 
     public String getTaskName() {
         return taskName;
@@ -75,5 +80,9 @@ public class ScheduleUpdateRequest {
 
     public void setEndDate(LocalDateTime endDate) {
         this.endDate = endDate;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }

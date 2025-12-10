@@ -23,8 +23,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
         return User.builder()
                 .username(employee.getEmail())
-                .password(employee.getPassword()) // BCrypt пароль
-                .roles("USER") // или ADMIN
+                .password(employee.getPassword())
+                .roles("USER")
                 .build();
     }
 }

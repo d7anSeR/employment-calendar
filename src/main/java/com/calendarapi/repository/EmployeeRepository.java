@@ -8,8 +8,8 @@ import java.util.Optional;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
-    boolean existsByEmail(String email);
-    // Метод для поиска пользователя по email
+    boolean existsById(Long id);
     Optional<Employee> findByEmail(String email);
+    Optional<Employee> findById(Long id);
 }
 

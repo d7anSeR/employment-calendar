@@ -37,6 +37,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/webhook/employee/auth").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/webhook/employee").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/webhook/employee").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/webhook/employee").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> {});
