@@ -3,6 +3,7 @@ package com.calendarapi.controller;
 import com.calendarapi.dto.ScheduleUpdateRequest;
 import com.calendarapi.model.ApiResponse;
 import com.calendarapi.model.ScheduleEntry;
+import com.calendarapi.repository.EmployeeRepository;
 import com.calendarapi.repository.ScheduleEntryRepository;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
@@ -20,9 +21,12 @@ import java.util.Objects;
 public class LuvrWebhookController {
 
     private final ScheduleEntryRepository repository;
+    private final EmployeeRepository employeeRepository;
 
-    public LuvrWebhookController(ScheduleEntryRepository repository) {
+    public LuvrWebhookController(ScheduleEntryRepository repository,
+                                 EmployeeRepository employeeRepository) {
         this.repository = repository;
+        this.employeeRepository = employeeRepository;
     }
 
     @PostMapping("/schedule")
@@ -37,6 +41,9 @@ public class LuvrWebhookController {
         }
 
         try {
+            if (!employeeRepository.existsById(schedule.getEmployeeId())) {
+                return new ApiResponse<>(false, "Сотрудник с ID " + schedule.getEmployeeId() + " не найден");
+            }
             repository.save(schedule); // сохраняем в БД
             return new ApiResponse<>(true, "Данные успешно приняты");
         } catch (Exception e) {
@@ -83,6 +90,13 @@ public class LuvrWebhookController {
                 return new ApiResponse<>(false, "Задача не может быть обновлена: она не личная");
             }
 
+            if (request.getEmployeeId() != null &&
+                    !employeeRepository.existsById(request.getEmployeeId())) {
+
+                return new ApiResponse<>(false, "Сотрудник с ID " + request.getEmployeeId() + " не найден");
+            }
+
+
             if (request.getTaskName() != null) task.setTaskName(request.getTaskName());
             if (request.getTaskDescription() != null) task.setTaskDescription(request.getTaskDescription());
             if (request.getStatus() != null) task.setStatus(request.getStatus());
@@ -109,6 +123,10 @@ public class LuvrWebhookController {
             ScheduleEntry task = repository.findByTaskId(taskId)
                     .orElseThrow(() -> new RuntimeException("Задача с taskId=" + taskId + " не найдена"));
 
+            if (!employeeRepository.existsById(employeeId)) {
+                return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
+            }
+
             if (!task.getEmployeeId().equals(employeeId)) {
                 return new ApiResponse<>(false, "Удаление невозможно: задача не принадлежит указанному сотруднику");
             }
@@ -121,6 +139,12 @@ public class LuvrWebhookController {
         } catch (Exception e) {
             return new ApiResponse<>(false, "Ошибка удаления: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/users")
+    public ApiResponse<List<ScheduleEntry>> getAllUsers() {
+        List<ScheduleEntry> list = repository.findAll();
+        return new ApiResponse<>(true, "Все пользователи получены", list);
     }
 
 }
