@@ -1,4 +1,4 @@
-// DaySchedule.tsx
+
 import { format, parseISO, startOfDay, isToday } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import styles from './DayPage.module.css';
@@ -61,7 +61,8 @@ function DaySchedule() {
   const timeSlots = useMemo(() => {
     const slots = [];
     
-    for (let i = 0; i < 24; i++) {
+    // Начинаем с 1:00 вместо 0:00
+    for (let i = 1; i < 24; i++) {
       slots.push({
         hour: `${i.toString().padStart(2, '0')}:00`,
         hourNumber: i,
@@ -69,6 +70,7 @@ function DaySchedule() {
       });
     }
     
+    // Последний слот 24:00
     slots.push({
       hour: '24:00',
       hourNumber: 24,
