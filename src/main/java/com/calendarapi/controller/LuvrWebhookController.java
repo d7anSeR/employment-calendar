@@ -169,4 +169,34 @@ public class LuvrWebhookController {
         }
     }
 
+    @GetMapping("/schedule/tasks")
+    public ApiResponse<List<ScheduleEntry>> getTasks(
+            HttpServletRequest httpRequest
+    ) {
+        try {
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Basic ")) {
+                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
+            }
+            String base64 = authHeader.substring("Basic ".length());
+            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+            String email = decoded.split(":", 2)[0];
+
+            Employee employee = employeeRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+
+            List<ScheduleEntry> scheduleEntries = repository.findAll();
+            for(ScheduleEntry scheduleEntry : scheduleEntries){
+                if(!Objects.equals(employee.getId(), scheduleEntry.getEmployeeId())){
+                    if(!Objects.equals(scheduleEntry.getViewTask(), "общая")){
+                        scheduleEntries.remove(scheduleEntry);
+                    }
+                }
+            }
+            return new ApiResponse<>(true, "Все общедоступные и свои задачи получены", scheduleEntries);
+        } catch (Exception e) {
+            return new ApiResponse<>(false, "Ошибка получения задач: " + e.getMessage());
+        }
+    }
+
 }

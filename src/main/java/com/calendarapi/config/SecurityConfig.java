@@ -36,9 +36,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/webhook/employee/auth").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/webhook/employee").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/webhook/employee").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/webhook/employee").permitAll()
+                        .requestMatchers("/api/webhook/schedule/tasks").permitAll()
                         .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> {});

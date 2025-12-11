@@ -17,7 +17,7 @@ public class EmployeeController {
     private final EmployeeService service;
 
     public EmployeeController(EmployeeRepository EmployeeRepository,
-    EmployeeService service) {
+                              EmployeeService service) {
         this.EmployeeRepository = EmployeeRepository;
         this.service = service;
     }
@@ -32,40 +32,10 @@ public class EmployeeController {
         }
     }
 
-    @PostMapping("/employee")
-    public ApiResponse<Employee> addEmployee(@RequestBody EmployeeRequest request) {
-        try {
-            Employee employee = service.createEmployee(request);
-            return new ApiResponse<>(true, "Пользователь создан", employee);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage());
-        }
-    }
-
-    @PutMapping("/employee")
-    public ApiResponse<Employee> updateEmployee(@RequestBody EmployeeRequest request) {
-        try {
-            Employee employee = service.updateEmployee(request);
-            return new ApiResponse<>(true, "Пользователь обновлен", employee);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage());
-        }
-    }
-
     @GetMapping("/employees")
     public ApiResponse<List<Employee>> getAllEmployees() {
         List<Employee> employees = EmployeeRepository.findAll();
         return new ApiResponse<>(true, "Список пользователей получен", employees);
-    }
-
-    @DeleteMapping("/employee")
-    public ApiResponse<List<Employee>> deleteEmployee(@RequestBody EmployeeRequest request) {
-        try {
-            service.deleteEmployee(request);
-            return new ApiResponse<>(true, "Пользователь удален");
-        } catch (Exception e) {
-            return new ApiResponse<>(false, e.getMessage());
-        }
     }
 }
 

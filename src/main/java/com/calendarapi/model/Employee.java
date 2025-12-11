@@ -23,15 +23,19 @@ public class Employee {
     @Column(name = "password")
     @NotBlank(message = "Поле пароль сотрудника обязательно")
     private String password;
+    @Column(name = "role")
+    @NotBlank(message = "Поле роли сотрудника обязательно")
+    private String role;
 
     public Employee() {
     }
 
-    public Employee(Long id, String name, String email, String password) {
+    public Employee(Long id, String name, String email, String password, String role) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.password = password;
+        this.role = role;
     }
 
     public Long getId() {
@@ -50,6 +54,10 @@ public class Employee {
         return password;
     }
 
+    public String getRole() {
+        return role;
+    }
+
 
     public void setId(Long id) {
         this.id = id;
@@ -65,5 +73,9 @@ public class Employee {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

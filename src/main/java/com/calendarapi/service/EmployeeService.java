@@ -5,6 +5,7 @@ import com.calendarapi.model.Employee;
 import com.calendarapi.repository.EmployeeRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
@@ -24,6 +25,7 @@ public class EmployeeService {
                 .orElse(false);
     }
 
+    @Transactional
     public Employee createEmployee(EmployeeRequest request) {
         if (repository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Пользователь с таким email уже существует");
@@ -38,10 +40,11 @@ public class EmployeeService {
         employee.setName(request.getName());
         employee.setEmail(request.getEmail());
         employee.setPassword(passwordEncoder.encode(request.getPassword()));
+        employee.setRole(request.getRole());
 
         return repository.save(employee);
     }
-
+    @Transactional
     public Employee updateEmployee(EmployeeRequest request) {
         Employee employee = repository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Пользователь с таким email не найден"));
@@ -50,6 +53,9 @@ public class EmployeeService {
         }
         if (request.getEmail() != null && !request.getEmail().isEmpty()) {
             employee.setEmail(request.getEmail());
+        }
+        if (request.getRole() != null && !request.getRole().isEmpty()) {
+            employee.setRole(request.getRole());
         }
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             employee.setPassword(passwordEncoder.encode(request.getPassword()));
