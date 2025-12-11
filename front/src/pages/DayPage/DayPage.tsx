@@ -1,13 +1,16 @@
 // DaySchedule.tsx
-import { format, parseISO, startOfDay, isToday, isSameDay } from 'date-fns';
+import { format, parseISO, startOfDay, isToday } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import styles from './DayPage.module.css';
-import useServerTips from '../../hooks/useGetTips';
-import useLocalTips from '../../hooks/useGetTipsLocal';
-import React, { useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { selectDateAndWeek } from '../../store/date.slice';
+import useGetTips from '../../hooks/useGetTips';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useParams, Link, useOutletContext } from 'react-router-dom';
 import TipModal from '../Main/TipModalWindow/TipModalWindow';
 import { useEventPositioning } from '../../hooks/useEventPositioning';
+import { MenuUnfoldOutlined } from '@ant-design/icons';
+import { addDays } from 'date-fns';
 
 interface Tip {
   id: number;
@@ -19,20 +22,35 @@ interface Tip {
   end_date: Date;
   status: string;
   priority: string;
+  task_type: 'personal' | 'work';
+}
+
+interface OutletContext {
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
+  isMobileLayout: boolean;
 }
 
 function DaySchedule() {
   const { date } = useParams<{ date: string }>();
+  const dispatch = useDispatch();
   
-  const { tips: serverTips, isLoading: serverLoading, error: serverError } = useServerTips();
-  const { tips: localTips, isLoaded: localLoaded } = useLocalTips();
+  const { isSidebarOpen, toggleSidebar, isMobileLayout } = useOutletContext<OutletContext>();
+  
+  const { tips, isLoading, error } = useGetTips();
   
   const { getPositionedEvents, getEventPosition, getEventHeight, getEventLeft, getEventWidth } = useEventPositioning();
   
   const [selectedTip, setSelectedTip] = useState<Tip | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Парсим дату из URL или используем сегодняшнюю дату
+  useEffect(() => {
+    if (date) {
+      const parsedDate = parseISO(date);
+      dispatch(selectDateAndWeek(parsedDate));
+    }
+  }, [date, dispatch]);
+
   const selectedDate = useMemo(() => {
     if (date) {
       return startOfDay(parseISO(date));
@@ -40,32 +58,43 @@ function DaySchedule() {
     return startOfDay(new Date());
   }, [date]);
 
-  // Объединяем данные с сервера и из LocalStorage
-  const allTips = [...serverTips, ...localTips];
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    
+    for (let i = 0; i < 24; i++) {
+      slots.push({
+        hour: `${i.toString().padStart(2, '0')}:00`,
+        hourNumber: i,
+        time: `${i.toString().padStart(2, '0')}:00`
+      });
+    }
+    
+    slots.push({
+      hour: '24:00',
+      hourNumber: 24,
+      time: '24:00'
+    });
+    
+    return slots;
+  }, []);
 
-  // Фильтруем заметки для выбранного дня
   const dayTips = useMemo(() => {
-    return allTips.filter(tip => {
+    return tips.filter(tip => {
       const tipDate = startOfDay(tip.start_date);
       return tipDate.getTime() === selectedDate.getTime();
     });
-  }, [allTips, selectedDate]);
+  }, [tips, selectedDate]);
 
-  // Создаем массив с одним днем (для совместимости с useEventPositioning)
-
-  // Генерируем временные слоты
-  const timeSlots = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => ({
-      hour: `${i.toString().padStart(2, '0')}:00`,
-      hourNumber: i
-    }));
-  }, []);
-
-  // Получаем события для конкретного дня и часа
-  const getEventsForTimeSlot = (day: Date, hour: number) => {
+  const getEventsForTimeSlot = (hour: number) => {
     const eventsInSlot = dayTips.filter(tip => {
       const tipHour = tip.start_date.getHours();
-      return isSameDay(tip.start_date, day) && tipHour === hour;
+      if (hour === 24) {
+        const nextDay = addDays(selectedDate, 1);
+        return tip.end_date.getHours() === 0 && 
+               tip.end_date.getMinutes() === 0 &&
+               startOfDay(tip.end_date).getTime() === nextDay.getTime();
+      }
+      return tipHour === hour;
     });
 
     return getPositionedEvents(eventsInSlot);
@@ -81,47 +110,61 @@ function DaySchedule() {
     setSelectedTip(null);
   };
 
-  // Форматируем дату для заголовка
-  const formattedDate = format(selectedDate, 'd MMMM yyyy, EEEE', { locale: ru });
+
   const isCurrentDay = isToday(selectedDate);
   const dayAbbreviation = format(selectedDate, 'EEEEEE', { locale: ru }).toUpperCase();
+  const currentDayName = format(selectedDate, 'EEEE', { locale: ru });
+  const currentDate = format(selectedDate, 'd MMMM yyyy', { locale: ru });
 
-  if (serverError && localTips.length === 0) {
+  if (error) {
     return (
       <div className={styles["day-schedule"]}>
         <div className={styles["error-message"]}>
-          Ошибка загрузки данных: {serverError}
+          Ошибка загрузки данных: {error}
         </div>
       </div>
     );
   }
 
-  const isLoading = serverLoading || !localLoaded;
-
   return (
     <>
       <div className={styles["day-schedule"]}>
         <div className={styles["schedule-header"]}>
-          <Link to="/" className={styles["back-button"]}>
-            ← Назад к неделе
-          </Link>
-          <span className={`${styles["day-range"]} ${isCurrentDay ? styles["today"] : ""}`}>
-            {formattedDate}
-            {isLoading && <span className={styles["loading-indicator"]}> (загрузка...)</span>}
-            {serverError && localTips.length > 0 && (
-              <span className={styles["warning-indicator"]}> (используются локальные данные)</span>
+          <div className={styles["header-content"]}>
+            {isMobileLayout && !isSidebarOpen && (
+              <button 
+                className={styles["header-burger-button"]}
+                onClick={toggleSidebar}
+                title="Открыть панель"
+              >
+                <MenuUnfoldOutlined />
+              </button>
             )}
-          </span>
-          <div className={styles["events-count"]}>
-            Заметок: {dayTips.length}
+            
+            <Link to="/" className={styles["back-button"]}>
+              ← Назад к неделе
+            </Link>
+            
+            <div className={styles["center-content"]}>
+              <div className={styles["mobile-day-info"]}>
+                <div className={styles["mobile-day-name"]}>
+                  {currentDayName.charAt(0).toUpperCase() + currentDayName.slice(1)}
+                </div>
+                <div className={styles["mobile-day-date"]}>
+                  {currentDate}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles["events-count"]}>
+              Заметок: {dayTips.length}
+              {isLoading && <span className={styles["loading-indicator"]}> (загрузка...)</span>}
+            </div>
           </div>
         </div>
 
         <div className={styles["schedule-grid"]}>
-          {/* Угловая ячейка */}
           <div className={styles["corner-cell"]}></div>
-          
-          {/* Заголовок дня */}
           <div 
             className={`${styles["day-header"]} ${isCurrentDay ? styles["today"] : ""}`}
           >
@@ -133,19 +176,20 @@ function DaySchedule() {
             </div>
           </div>
 
-          {/* Временные слоты и ячейки */}
-          {timeSlots.map(slot => (
+          {timeSlots.map((slot, index) => (
             <React.Fragment key={slot.hour}>
-              <div className={styles["time-slot"]}>
-                {slot.hour}
+              <div 
+                className={styles["time-slot"]}
+                style={{ gridRow: index + 2 }}
+              >
+                {slot.time}
               </div>
               
-              {/* Ячейка для текущего дня и часа */}
               <div 
-                key={`${slot.hour}-${selectedDate.toISOString()}`}
                 className={styles["schedule-cell"]}
+                style={{ gridRow: index + 2 }}
               >
-                {getEventsForTimeSlot(selectedDate, slot.hourNumber).map(event => (
+                {getEventsForTimeSlot(slot.hourNumber).map(event => (
                   <div
                     key={event.id}
                     className={styles["event"]}
@@ -154,10 +198,10 @@ function DaySchedule() {
                       height: `${getEventHeight(event.start_date, event.end_date)}%`,
                       left: `${getEventLeft(event.column, event.totalColumns)}%`,
                       width: getEventWidth(event.totalColumns),
-                      backgroundColor: getEventColor(event.priority)
+                      backgroundColor: getEventColor(event.priority, event.task_type)
                     }}
                     onClick={() => handleEventClick(event)}
-                    title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\n${event.id > 1000000 ? 'Локальная задача' : 'Серверная задача'}`}
+                    title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
                   >
                     <div className={styles["event-title"]}>
                       {event.task_name}
@@ -168,11 +212,9 @@ function DaySchedule() {
                     <div className={styles["event-employee"]}>
                       {event.employee_name}
                     </div>
-                    {event.id > 1000000 && (
-                      <div className={styles["event-local-badge"]}>
-                        локальная
-                      </div>
-                    )}
+                    <div className={event.task_type === 'personal' ? styles["event-personal-badge"] : styles["event-work-badge"]}>
+                      {event.task_type === 'personal' ? 'личная' : 'рабочая'}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -190,16 +232,29 @@ function DaySchedule() {
   );
 };
 
-const getEventColor = (priority: string): string => {
+const getEventColor = (priority: string, task_type: 'personal' | 'work'): string => {
+  if (task_type === 'personal') {
+    switch (priority.toLowerCase()) {
+      case 'высокий':
+        return '#e66868';
+      case 'средний':
+        return '#f7a536';
+      case 'низкий':
+        return '#6bc46d';
+      default:
+        return '#8b5cf6';
+    }
+  }
+  
   switch (priority.toLowerCase()) {
     case 'высокий':
       return '#f28b82';
     case 'средний':
-      return '#fbbc04';
-    case 'низкий':
-      return '#34a853';
-    default:
-      return '#4285f4';
+        return '#fbbc04';
+      case 'низкий':
+        return '#34a853';
+      default:
+        return '#4285f4';
   }
 };
 

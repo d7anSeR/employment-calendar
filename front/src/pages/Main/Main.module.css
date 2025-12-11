@@ -123,11 +123,8 @@
   border-color: #40a9ff;
 }
 
-/* Таблица занимает всю оставшуюся высоту */
 .schedule-grid {
   display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  grid-template-rows: 50px repeat(24, 1fr);
   flex: 1;
   overflow: auto;
   min-height: 0;
@@ -135,74 +132,30 @@
   padding: 0;
 }
 
-/* Мобильный режим - только один день БЕЗ ЗАГОЛОВКА ДНЯ */
+.schedule-grid:not(.schedule-grid--mobile) {
+  grid-template-columns: 60px repeat(7, 1fr);
+  grid-template-rows: 50px repeat(24, 1fr);
+}
+
 .schedule-grid--mobile {
-  grid-template-columns: 60px 1fr !important;
-  grid-template-rows: 0 repeat(24, 1fr) !important; /* Убираем строку заголовка дня */
+  grid-template-columns: 60px 1fr;
+  grid-template-rows: 50px repeat(24, 1fr);
 }
 
-/* Скрываем уголок таблицы в мобильном режиме */
-.schedule-grid--mobile .corner-cell {
-  display: none !important;
-}
-
-/* Скрываем заголовки дней в мобильном режиме */
-.schedule-grid--mobile .day-header {
-  display: none !important;
-}
-
-/* Уголок для времени в мобильном режиме */
-.time-slot-corner {
-  display: none;
-}
-
-/* В мобильном режиме скрываем первую строку с заголовками дней */
-@media (max-width: 850px) {
-  .schedule-grid--mobile {
-    grid-template-rows: 0 repeat(24, 1fr) !important;
-  }
-
-  .schedule-grid--mobile .corner-cell,
-  .schedule-grid--mobile .day-header {
-    display: none !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-  }
-}
-
-/* Адаптивные стили для мобильных устройств */
-@media (max-width: 850px) {
-  .schedule-grid:not(.schedule-grid--mobile) {
-    grid-template-columns: 60px 1fr;
-    grid-template-rows: 50px repeat(24, 1fr);
-  }
-
-  /* Скрываем все дни кроме первого в недельном режиме на мобильных */
-  .schedule-grid:not(.schedule-grid--mobile) .day-header:not(:first-of-type),
-  .schedule-grid:not(.schedule-grid--mobile) .schedule-cell:nth-child(3n),
-  .schedule-grid:not(.schedule-grid--mobile) .schedule-cell:nth-child(4n),
-  .schedule-grid:not(.schedule-grid--mobile) .schedule-cell:nth-child(5n),
-  .schedule-grid:not(.schedule-grid--mobile) .schedule-cell:nth-child(6n),
-  .schedule-grid:not(.schedule-grid--mobile) .schedule-cell:nth-child(7n),
-  .schedule-grid:not(.schedule-grid--mobile) .schedule-cell:nth-child(8n) {
-    display: none;
-  }
-}
-
-/* Остальные стили без изменений */
 .corner-cell {
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
   border-bottom: 1px solid #e0e0e0;
   position: sticky;
   left: 0;
-  z-index: 1;
+  top: 0;
+  z-index: 3;
 }
 
 .day-header {
+  grid-row: 1 / 2;
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
   border-bottom: 1px solid #e0e0e0;
@@ -213,13 +166,15 @@
   gap: 2px;
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .day-header:hover {
   background: #e8f0fe;
 }
+
 .day-header.today {
   background: #e8f0fe;
 }
@@ -254,6 +209,19 @@
   position: sticky;
   left: 0;
   z-index: 1;
+  min-height: 60px;
+}
+
+.schedule-grid--mobile .time-slot {
+  grid-column: 1 / 2;
+}
+
+.schedule-grid--mobile .schedule-cell {
+  grid-column: 2 / 3;
+}
+
+.schedule-grid:not(.schedule-grid--mobile) .time-slot {
+  grid-column: 1 / 2;
 }
 
 .schedule-cell {
@@ -279,6 +247,10 @@
   z-index: 1;
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  left: 2px;
+  right: 2px;
+  margin: 0 1px;
+  min-height: 20px;
 }
 
 .event:hover {
@@ -310,6 +282,24 @@
   text-overflow: ellipsis;
 }
 
+.event-personal-badge {
+  font-size: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 1px 3px;
+  border-radius: 2px;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+.event-work-badge {
+  font-size: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  padding: 1px 3px;
+  border-radius: 2px;
+  margin-top: 2px;
+  display: inline-block;
+}
+
 .error-message {
   padding: 20px;
   text-align: center;
@@ -325,16 +315,67 @@
   font-weight: normal;
 }
 
-.event-local-badge {
-  font-size: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1px 3px;
-  border-radius: 2px;
-  margin-top: 2px;
-}
-
 .warning-indicator {
   color: #fbbc04;
   font-size: 14px;
   font-weight: normal;
+}
+
+@media (max-width: 850px) {
+  .week-schedule {
+    height: 100%;
+  }
+
+  .schedule-header {
+    padding: 8px 12px;
+  }
+
+  .mobile-day-header {
+    gap: 4px;
+  }
+
+  .day-nav-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .today-button {
+    height: 32px;
+    padding: 0 8px;
+    font-size: 12px;
+  }
+
+  .mobile-day-name {
+    font-size: 12px;
+  }
+
+  .mobile-day-date {
+    font-size: 11px;
+  }
+
+  .schedule-grid--mobile .event {
+    left: 1px;
+    right: 1px;
+    padding: 3px;
+  }
+
+  @media (max-width: 400px) {
+    .mobile-day-name {
+      display: none;
+    }
+
+    .mobile-day-date {
+      font-size: 12px;
+    }
+
+    .today-button {
+      padding: 0 6px;
+      font-size: 11px;
+    }
+
+    .time-slot {
+      font-size: 10px;
+      padding-right: 4px;
+    }
+  }
 }

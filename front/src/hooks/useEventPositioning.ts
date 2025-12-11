@@ -8,6 +8,7 @@ interface Tip {
   end_date: Date;
   status: string;
   priority: string;
+  task_type: "personal" | "work";
 }
 
 interface PositionedTip extends Tip {

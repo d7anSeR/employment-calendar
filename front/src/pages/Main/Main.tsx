@@ -8,15 +8,15 @@ import {
   selectDateAndWeek,
   goToToday 
 } from '../../store/date.slice';
-import useServerTips from '../../hooks/useGetTips';
-import useLocalTips from '../../hooks/useGetTipsLocal';
-import React, { useState, useEffect } from 'react';
+import useGetTips from '../../hooks/useGetTips';
+import { useState, useEffect } from 'react';
 import { useEventPositioning } from '../../hooks/useEventPositioning';
 import { useWeekGrid } from '../../hooks/useWeekGrid';
 import TipModal from './TipModalWindow/TipModalWindow';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { MenuUnfoldOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import type { AppDispatch } from '../../store/store';
+import React from 'react';
 
 interface Tip {
   id: number;
@@ -28,6 +28,7 @@ interface Tip {
   end_date: Date;
   status: string;
   priority: string;
+  task_type: 'personal' | 'work';
 }
 
 interface OutletContext {
@@ -42,20 +43,15 @@ function WeekSchedule() {
   const selectedDate = useSelector(selectSelectedDate);
   const navigate = useNavigate();
   
-  // Получаем контекст из MainLayout
   const { isSidebarOpen, toggleSidebar, isMobileLayout } = useOutletContext<OutletContext>();
   
-  // Состояние для мобильного режима (один день)
   const [isMobileDayView, setIsMobileDayView] = useState<boolean>(false);
   
-  // Используем оба хука
-  const { tips: serverTips, isLoading: serverLoading, error: serverError } = useServerTips();
-  const { tips: localTips, isLoaded: localLoaded } = useLocalTips();
+  const { tips, isLoading, error } = useGetTips();
   
   const { getPositionedEvents, getEventPosition, getEventHeight, getEventLeft, getEventWidth } = useEventPositioning();
   const { weekDays, dayAbbreviations, weekRange, timeSlots } = useWeekGrid(currentWeek);
   
-  // Проверяем ширину экрана для мобильного режима
   useEffect(() => {
     const checkScreenWidth = () => {
       setIsMobileDayView(window.innerWidth <= 850);
@@ -67,20 +63,15 @@ function WeekSchedule() {
     return () => window.removeEventListener('resize', checkScreenWidth);
   }, []);
   
-  // Объединяем данные с сервера и из LocalStorage
-  const allTips = [...serverTips, ...localTips];
-  
   const [selectedTip, setSelectedTip] = useState<Tip | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleEventClick = (tip: Tip) => {
-    console.log('Event clicked:', tip);
     setSelectedTip(tip);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
-    console.log('Closing modal');
     setIsModalOpen(false);
     setSelectedTip(null);
   };
@@ -90,7 +81,6 @@ function WeekSchedule() {
     navigate(`/day/${dateString}`);
   };
 
-  // Навигация по дням через Redux
   const goToNextDay = () => {
     const nextDay = addDays(selectedDate, 1);
     dispatch(selectDateAndWeek(nextDay));
@@ -105,9 +95,8 @@ function WeekSchedule() {
     dispatch(goToToday());
   };
 
-  // Функция для получения событий для конкретного дня и часа
   const getEventsForTimeSlot = (day: Date, hour: number) => {
-    const eventsInSlot = allTips.filter(tip => {
+    const eventsInSlot = tips.filter(tip => {
       const tipHour = tip.start_date.getHours();
       return isSameDay(tip.start_date, day) && tipHour === hour;
     });
@@ -115,31 +104,24 @@ function WeekSchedule() {
     return getPositionedEvents(eventsInSlot);
   };
 
-  // Находим индекс выбранного дня в текущей неделе для отображения
-
   const currentDayName = format(selectedDate, 'EEEE', { locale: ru });
   const currentDate = format(selectedDate, 'd MMMM yyyy', { locale: ru });
 
-  // Показываем ошибку только если есть ошибка сервера И локальные данные не загружены
-  if (serverError && localTips.length === 0) {
+  if (error) {
     return (
       <div className={styles["week-schedule"]}>
         <div className={styles["error-message"]}>
-          Ошибка загрузки данных: {serverError}
+          Ошибка загрузки данных: {error}
         </div>
       </div>
     );
   }
-
-  // Общий индикатор загрузки
-  const isLoading = serverLoading || !localLoaded;
 
   return (
     <>
       <div className={styles["week-schedule"]}>
         <div className={styles["schedule-header"]}>
           <div className={styles["header-content"]}>
-            {/* Кнопка для открытия сайдбара - показываем только на мобильных и когда сайдбар закрыт */}
             {isMobileLayout && !isSidebarOpen && (
               <button 
                 className={styles["header-burger-button"]}
@@ -150,7 +132,6 @@ function WeekSchedule() {
               </button>
             )}
             
-            {/* Заголовок для недельного и дневного режима */}
             {isMobileDayView ? (
               <div className={styles["mobile-day-header"]}>
                 <button 
@@ -190,9 +171,6 @@ function WeekSchedule() {
               <span className={styles["week-range"]}>
                 {weekRange}
                 {isLoading && <span className={styles["loading-indicator"]}> (загрузка...)</span>}
-                {serverError && localTips.length > 0 && (
-                  <span className={styles["warning-indicator"]}> (используются локальные данные)</span>
-                )}
               </span>
             )}
           </div>
@@ -203,129 +181,139 @@ function WeekSchedule() {
           ${isMobileDayView ? styles["schedule-grid--mobile"] : ""}
         `}>
           {isMobileDayView ? (
-  // Мобильный режим - один день (выбранная дата)
-  <>
-    <div className={styles["corner-cell"]}></div>
-    
-    {/* ЗАГОЛОВОК ТАБЛИЦЫ НЕ ПОКАЗЫВАЕМ - скрываем эту колонку */}
-    <div className={styles["time-slot-corner"]}></div>
-
-    {timeSlots.map(slot => (
-      <React.Fragment key={slot.hour}>
-        <div className={styles["time-slot"]}>
-          {slot.time}
-        </div>
-        
-        <div 
-          key={`${slot.hour}-${selectedDate.toISOString()}`}
-          className={styles["schedule-cell"]}
-        >
-          {getEventsForTimeSlot(selectedDate, slot.hourNumber).map(event => (
-            <div
-              key={event.id}
-              className={styles["event"]}
-              style={{
-                top: `${getEventPosition(event.start_date)}%`,
-                height: `${getEventHeight(event.start_date, event.end_date)}%`,
-                left: `${getEventLeft(event.column, event.totalColumns)}%`,
-                width: getEventWidth(event.totalColumns),
-                backgroundColor: getEventColor(event.priority)
-              }}
-              onClick={() => handleEventClick(event)}
-              title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\n${event.id > 1000000 ? 'Локальная задача' : 'Серверная задача'}`}
-            >
-              <div className={styles["event-title"]}>
-                {event.task_name}
-              </div>
-              <div className={styles["event-time"]}>
-                {format(event.start_date, 'HH:mm')} - {format(event.end_date, 'HH:mm')}
-              </div>
-              <div className={styles["event-employee"]}>
-                {event.employee_name}
-              </div>
-              {event.id > 1000000 && (
-                <div className={styles["event-local-badge"]}>
-                  локальная
+            // Мобильный режим - один день (ПРАВИЛЬНАЯ СТРУКТУРА)
+            <>
+              {/* Строка 1: Уголок и заголовок дня */}
+              <div className={styles["corner-cell"]}></div>
+              <div 
+                className={`${styles["day-header"]} ${isToday(selectedDate) ? styles["today"] : ""}`}
+              >
+                <div className={styles["day-abbreviation"]}>
+                  {format(selectedDate, 'EEEEEE', { locale: ru }).toUpperCase()}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </React.Fragment>
-    ))}
-  </>
-) : (
-  // Десктопный режим - вся неделя (без изменений)
-  <>
-    <div className={styles["corner-cell"]}></div>
-    
-    {weekDays.map((day, index) => (
-      <div 
-        key={day.toISOString()} 
-        className={`${styles["day-header"]} ${isToday(day) ? styles["today"] : ""}`}
-        onClick={() => handleDayClick(day)}
-        style={{ cursor: 'pointer' }}
-      >
-        <div className={styles["day-abbreviation"]}>
-          {dayAbbreviations[index]}
-        </div>
-        <div className={styles["day-date"]}>
-          {format(day, 'd', { locale: ru })}
-        </div>
-      </div>
-    ))}
+                <div className={styles["day-date"]}>
+                  {format(selectedDate, 'd', { locale: ru })}
+                </div>
+              </div>
 
-    {timeSlots.map(slot => (
-      <React.Fragment key={slot.hour}>
-        <div className={styles["time-slot"]}>
-          {slot.time}
-        </div>
-        
-        {weekDays.map(day => {
-          const events = getEventsForTimeSlot(day, slot.hourNumber);
-          
-          return (
-            <div 
-              key={`${slot.hour}-${day.toISOString()}`}
-              className={styles["schedule-cell"]}
-            >
-              {events.map(event => (
-                <div
-                  key={event.id}
-                  className={styles["event"]}
-                  style={{
-                    top: `${getEventPosition(event.start_date)}%`,
-                    height: `${getEventHeight(event.start_date, event.end_date)}%`,
-                    left: `${getEventLeft(event.column, event.totalColumns)}%`,
-                    width: getEventWidth(event.totalColumns),
-                    backgroundColor: getEventColor(event.priority)
-                  }}
-                  onClick={() => handleEventClick(event)}
-                  title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\n${event.id > 1000000 ? 'Локальная задача' : 'Серверная задача'}`}
+              {timeSlots.map((slot, index) => (
+                <React.Fragment key={slot.hour}>
+                  <div 
+                    className={styles["time-slot"]}
+                    style={{ gridRow: index + 2 }}
+                  >
+                    {slot.time}
+                  </div>
+                  
+                  <div 
+                    className={styles["schedule-cell"]}
+                    style={{ gridRow: index + 2 }}
+                  >
+                    {getEventsForTimeSlot(selectedDate, slot.hourNumber).map(event => (
+                      <div
+                        key={event.id}
+                        className={styles["event"]}
+                        style={{
+                          top: `${getEventPosition(event.start_date)}%`,
+                          height: `${getEventHeight(event.start_date, event.end_date)}%`,
+                          left: `${getEventLeft(event.column, event.totalColumns)}%`,
+                          width: getEventWidth(event.totalColumns),
+                          backgroundColor: getEventColor(event.priority, event.task_type)
+                        }}
+                        onClick={() => handleEventClick(event)}
+                        title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
+                      >
+                        <div className={styles["event-title"]}>
+                          {event.task_name}
+                        </div>
+                        <div className={styles["event-time"]}>
+                          {format(event.start_date, 'HH:mm')} - {format(event.end_date, 'HH:mm')}
+                        </div>
+                        <div className={styles["event-employee"]}>
+                          {event.employee_name}
+                        </div>
+                        <div className={event.task_type === 'personal' ? styles["event-personal-badge"] : styles["event-work-badge"]}>
+                          {event.task_type === 'personal' ? 'личная' : 'рабочая'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </React.Fragment>
+              ))}
+            </>
+          ) : (
+            // Десктопный режим - вся неделя
+            <>
+              {/* Строка 1: Уголок и заголовки дней */}
+              <div className={styles["corner-cell"]}></div>
+              {weekDays.map((day, index) => (
+                <div 
+                  key={day.toISOString()} 
+                  className={`${styles["day-header"]} ${isToday(day) ? styles["today"] : ""}`}
+                  onClick={() => handleDayClick(day)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  <div className={styles["event-title"]}>
-                    {event.task_name}
+                  <div className={styles["day-abbreviation"]}>
+                    {dayAbbreviations[index]}
                   </div>
-                  <div className={styles["event-time"]}>
-                    {format(event.start_date, 'HH:mm')} - {format(event.end_date, 'HH:mm')}
+                  <div className={styles["day-date"]}>
+                    {format(day, 'd', { locale: ru })}
                   </div>
-                  <div className={styles["event-employee"]}>
-                    {event.employee_name}
-                  </div>
-                  {event.id > 1000000 && (
-                    <div className={styles["event-local-badge"]}>
-                      локальная
-                    </div>
-                  )}
                 </div>
               ))}
-            </div>
-          );
-        })}
-      </React.Fragment>
-    ))}
-  </>
-)}
+
+              {/* Строки 2-25: Временные слоты и ячейки */}
+              {timeSlots.map((slot) => (
+                <React.Fragment key={slot.hour}>
+                  {/* Временной слот */}
+                  <div className={styles["time-slot"]}>
+                    {slot.time}
+                  </div>
+                  
+                  {/* Ячейки для каждого дня */}
+                  {weekDays.map(day => {
+                    const events = getEventsForTimeSlot(day, slot.hourNumber);
+                    
+                    return (
+                      <div 
+                        key={`${slot.hour}-${day.toISOString()}`}
+                        className={styles["schedule-cell"]}
+                      >
+                        {events.map(event => (
+                          <div
+                            key={event.id}
+                            className={styles["event"]}
+                            style={{
+                              top: `${getEventPosition(event.start_date)}%`,
+                              height: `${getEventHeight(event.start_date, event.end_date)}%`,
+                              left: `${getEventLeft(event.column, event.totalColumns)}%`,
+                              width: getEventWidth(event.totalColumns),
+                              backgroundColor: getEventColor(event.priority, event.task_type)
+                            }}
+                            onClick={() => handleEventClick(event)}
+                            title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
+                          >
+                            <div className={styles["event-title"]}>
+                              {event.task_name}
+                            </div>
+                            <div className={styles["event-time"]}>
+                              {format(event.start_date, 'HH:mm')} - {format(event.end_date, 'HH:mm')}
+                            </div>
+                            <div className={styles["event-employee"]}>
+                              {event.employee_name}
+                            </div>
+                            <div className={event.task_type === 'personal' ? styles["event-personal-badge"] : styles["event-work-badge"]}>
+                              {event.task_type === 'personal' ? 'личная' : 'рабочая'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </>
+          )}
         </div>
       </div>
 
@@ -338,11 +326,24 @@ function WeekSchedule() {
   );
 };
 
-const getEventColor = (priority: string): string => {
+const getEventColor = (priority: string, task_type: 'personal' | 'work'): string => {
+  if (task_type === 'personal') {
+    switch (priority.toLowerCase()) {
+      case 'высокий':
+        return '#e66868';
+      case 'средний':
+        return '#f7a536';
+      case 'низкий':
+        return '#6bc46d';
+      default:
+        return '#8b5cf6';
+    }
+  }
+  
   switch (priority.toLowerCase()) {
     case 'высокий':
       return '#f28b82';
-    case 'средный':
+    case 'средний':
       return '#fbbc04';
     case 'низкий':
       return '#34a853';
