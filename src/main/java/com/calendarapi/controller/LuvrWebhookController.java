@@ -64,13 +64,35 @@ public class LuvrWebhookController {
     }
 
     @GetMapping("/employee/{employeeId}")
-    public ApiResponse<List<ScheduleEntry>> getByEmployee(@PathVariable Long employeeId) {
-        List<ScheduleEntry> tasks = repository.findByEmployeeId(employeeId);
+    public ApiResponse<List<ScheduleEntry>> getByEmployee(@PathVariable Long employeeId,
+                                                          HttpServletRequest httpRequest) {
+
+        String authHeader = httpRequest.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Basic ")) {
+            return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
+        }
+
+        String base64 = authHeader.substring("Basic ".length());
+        String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+        String email = decoded.split(":", 2)[0];
+
+        Employee employee = employeeRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+
         if (!employeeRepository.existsById(employeeId)) {
             return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
         }
+
+        List<ScheduleEntry> tasks = repository.findByEmployeeId(employeeId);
+
+        tasks.removeIf(task ->
+                !Objects.equals(task.getEmployeeId(), employee.getId())
+                        && !"общая".equals(task.getViewTask())
+        );
+
         return new ApiResponse<>(true, "Задачи сотрудника получены", tasks);
     }
+
 
     @GetMapping("/date/{date}")
     public ApiResponse<List<ScheduleEntry>> getByDate(@PathVariable String date) {
@@ -83,15 +105,39 @@ public class LuvrWebhookController {
 
     @GetMapping("/employee/{employeeId}/date/{date}")
     public ApiResponse<List<ScheduleEntry>> getByEmployeeAndDate(@PathVariable Long employeeId,
-                                                             @PathVariable String date) {
-        LocalDateTime startOfDay = LocalDateTime.parse(date + "T00:00:00");
-        LocalDateTime endOfDay = LocalDateTime.parse(date + "T23:59:59");
+                                                                 @PathVariable String date,
+                                                                 HttpServletRequest httpRequest) {
+
+        String authHeader = httpRequest.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith("Basic ")) {
+            return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
+        }
+
+        String base64 = authHeader.substring("Basic ".length());
+        String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
+        String email = decoded.split(":", 2)[0];
+
+        Employee employee = employeeRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+
         if (!employeeRepository.existsById(employeeId)) {
             return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
         }
-        List<ScheduleEntry> tasks = repository.findByEmployeeIdAndStartDateBetween(employeeId, startOfDay, endOfDay);
+
+        LocalDateTime startOfDay = LocalDateTime.parse(date + "T00:00:00");
+        LocalDateTime endOfDay = LocalDateTime.parse(date + "T23:59:59");
+
+        List<ScheduleEntry> tasks =
+                repository.findByEmployeeIdAndStartDateBetween(employeeId, startOfDay, endOfDay);
+
+        tasks.removeIf(task ->
+                !Objects.equals(task.getEmployeeId(), employee.getId())
+                        && !"общая".equals(task.getViewTask())
+        );
+
         return new ApiResponse<>(true, "Задачи сотрудника за день получены", tasks);
     }
+
 
     @PatchMapping("/schedule/task/{id}")
     public ApiResponse<?> updateTaskById(
