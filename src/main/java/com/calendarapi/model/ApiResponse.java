@@ -1,12 +1,18 @@
 package com.calendarapi.model;
 
 
+import java.util.Map;
+
 public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
+    private Map<String, String> errors;
 
-    public ApiResponse() {}
+    public ApiResponse(boolean success, String message) {
+        this.success = success;
+        this.message = message;
+    }
 
     public ApiResponse(boolean success, String message, T data) {
         this.success = success;
@@ -14,8 +20,10 @@ public class ApiResponse<T> {
         this.data = data;
     }
 
-    public ApiResponse(boolean success, String message) {
-        this(success, message, null);
+    public ApiResponse(boolean success, String message, Map<String, String> errors) {
+        this.success = success;
+        this.message = message;
+        this.errors = errors;
     }
 
     public boolean isSuccess() { return success; }

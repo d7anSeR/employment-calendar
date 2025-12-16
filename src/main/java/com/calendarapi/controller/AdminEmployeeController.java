@@ -7,7 +7,6 @@ import com.calendarapi.model.Employee;
 import com.calendarapi.service.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -29,23 +28,17 @@ public class AdminEmployeeController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/update")
-    public ApiResponse<?> update(@Valid @RequestBody EmployeeUpdateRequest request) {
-        try {
-            Employee employee = service.updateEmployee(request);
-            return new ApiResponse<>(true, "Пользователь обновлен", employee);
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Ошибка обновления: " + e.getMessage());
-        }
+    public ApiResponse<Employee> update(
+            @Valid @RequestBody EmployeeUpdateRequest request
+    ) {
+        Employee employee = service.updateEmployee(request);
+        return new ApiResponse<>(true, "Пользователь обновлен", employee);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/delete")
     public ApiResponse<?> delete(@Valid @RequestBody EmployeeUpdateRequest request) {
-        try {
-            service.deleteEmployee(request);
-            return new ApiResponse<>(true, "Пользователь удален");
-        } catch (Exception e) {
-            return new ApiResponse<>(false, "Ошибка удаления: " + e.getMessage());
-        }
+        service.deleteEmployee(request);
+        return new ApiResponse<>(true, "Пользователь удален");
     }
 }

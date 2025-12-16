@@ -4,7 +4,9 @@ import com.calendarapi.dto.EmployeeRequest;
 import com.calendarapi.dto.EmployeeUpdateRequest;
 import com.calendarapi.model.Employee;
 import com.calendarapi.repository.EmployeeRepository;
-import org.springframework.beans.factory.annotation.Value;
+import com.calendarapi.security.SecurityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -14,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
+
 
 
 @Service
@@ -23,7 +25,9 @@ public class EmployeeService {
     private final EmployeeRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
-
+    private static final Logger log =
+            LoggerFactory.getLogger(EmployeeService.class);
+    String actor = SecurityUtils.currentUser();
 
     public EmployeeService(EmployeeRepository repository,
                            PasswordEncoder passwordEncoder,
@@ -42,7 +46,7 @@ public class EmployeeService {
                 .expiresAt(now.plusSeconds(43200))
                 .subject(email)
                 .build();
-
+        log.info("JWT ISSUED | email={} | role={}", email, role);
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
 
     }
@@ -51,11 +55,15 @@ public class EmployeeService {
         return repository.findByEmail(email)
                 .map(employee -> {
                     boolean match = passwordEncoder.matches(rawPassword, employee.getPassword());
-                    System.out.println("Email: " + email + ", Match: " + match);
+                    if (match) {
+                        log.info("SUCCESS LOGIN | email={}", email);
+                    } else {
+                        log.warn("FAILED LOGIN | email={}", email);
+                    }
                     return match;
                 })
                 .orElseGet(() -> {
-                    System.out.println("Email not found: " + email);
+                    log.warn("FAILED LOGIN | email={} | reason=NOT_FOUND", email);
                     return false;
                 });
     }
@@ -76,7 +84,8 @@ public class EmployeeService {
         employee.setEmail(request.getEmail());
         employee.setPassword(passwordEncoder.encode(request.getPassword()));
         employee.setRole(request.getRole());
-
+        log.info("EMPLOYEE CREATED | by=ADMIN | email={} | targetEmail={} | targetId={}",
+                actor, request.getEmail(), request.getId());
         return repository.save(employee);
     }
 
@@ -96,6 +105,8 @@ public class EmployeeService {
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             employee.setPassword(passwordEncoder.encode(request.getPassword()));
         }
+        log.info("EMPLOYEE UPDATE | by=ADMIN | email={} | targetEmail={} | targetId={}",
+                actor, request.getEmail(), request.getId());
 
         return repository.save(employee);
     }
@@ -104,5 +115,7 @@ public class EmployeeService {
         Employee employee = repository.findById(request.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь с таким id не найден"));
         repository.delete(employee);
+        log.info("EMPLOYEE DELETE | by=ADMIN | email={} | targetEmail={} | targetId={}",
+                actor, request.getEmail(), request.getId());
     }
 }
