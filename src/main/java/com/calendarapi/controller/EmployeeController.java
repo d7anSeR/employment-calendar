@@ -5,6 +5,8 @@ import com.calendarapi.model.ApiResponse;
 import com.calendarapi.model.Employee;
 import com.calendarapi.repository.EmployeeRepository;
 import com.calendarapi.service.EmployeeService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,19 +25,24 @@ public class EmployeeController {
     }
 
     @PostMapping("/employee/auth")
-    public ApiResponse<Boolean> authenticate(@RequestBody EmployeeRequest request) {
+    public ApiResponse<String> authenticate(@RequestBody EmployeeRequest request) {
         boolean result = service.authenticate(request.getEmail(), request.getPassword());
-        if (result) {
-            return new ApiResponse<>(true, "Аутентификация успешна", true);
-        } else {
-            return new ApiResponse<>(false, "Неверный email или пароль", false);
+        if (!result) {
+            return new ApiResponse<>(false, "Неверный email или пароль", null);
         }
+        Employee employee = EmployeeRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String token = service.generateToken(request.getEmail(), employee.getRole());
+        return new ApiResponse<>(true, "Аутентификация успешна", token);
     }
 
+
     @GetMapping("/employees")
-    public ApiResponse<List<Employee>> getAllEmployees() {
+    public ApiResponse<List<Employee>> getAllEmployees(@AuthenticationPrincipal Jwt jwt) {
+        Employee employee = EmployeeRepository.findByEmail(jwt.getSubject())
+                .orElseThrow(() -> new RuntimeException("Сотрудник не найден"));
         List<Employee> employees = EmployeeRepository.findAll();
-        return new ApiResponse<>(true, "Список пользователей получен", employees);
+        return new ApiResponse<>(true, "Список сотрудников получен", employees);
     }
 }
 

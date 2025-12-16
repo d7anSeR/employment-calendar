@@ -8,6 +8,9 @@ import com.calendarapi.repository.EmployeeRepository;
 import com.calendarapi.repository.ScheduleEntryRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +34,7 @@ public class LuvrWebhookController {
 
     @PostMapping("/schedule")
     public ApiResponse<?> receiveSchedule(@Valid @RequestBody ScheduleEntry schedule, BindingResult bindingResult,
-                                          HttpServletRequest httpRequest) {
+                                          @AuthenticationPrincipal Jwt jwt) {
         // Проверяем ошибки валидации
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
@@ -42,17 +45,12 @@ public class LuvrWebhookController {
         }
 
         try {
-            String authHeader = httpRequest.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
-            }
-            String base64 = authHeader.substring("Basic ".length());
-            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-            String email = decoded.split(":", 2)[0];
-
+            String email = jwt.getSubject();
             Employee employee = employeeRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+
             schedule.setEmployeeId(employee.getId());
+
             if (repository.existsById(schedule.getId())) {
                 return new ApiResponse<>(false, "Задача с ID " + schedule.getId() + " уже существует");
             }
@@ -65,30 +63,18 @@ public class LuvrWebhookController {
 
     @GetMapping("/employee/{employeeId}")
     public ApiResponse<List<ScheduleEntry>> getByEmployee(@PathVariable Long employeeId,
-                                                          HttpServletRequest httpRequest) {
+                                                          @AuthenticationPrincipal Jwt jwt) {
 
-        String authHeader = httpRequest.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Basic ")) {
-            return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
-        }
-
-        String base64 = authHeader.substring("Basic ".length());
-        String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-        String email = decoded.split(":", 2)[0];
-
-        Employee employee = employeeRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+        Employee employee = employeeRepository.findByEmail(jwt.getSubject())
+                .orElseThrow(() -> new RuntimeException("Сотрудник не найден"));
 
         if (!employeeRepository.existsById(employeeId)) {
             return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
         }
 
         List<ScheduleEntry> tasks = repository.findByEmployeeId(employeeId);
-
-        tasks.removeIf(task ->
-                !Objects.equals(task.getEmployeeId(), employee.getId())
-                        && !"общая".equals(task.getViewTask())
-        );
+        tasks.removeIf(task -> !Objects.equals(task.getEmployeeId(), employee.getId())
+                && !"общая".equals(task.getViewTask()));
 
         return new ApiResponse<>(true, "Задачи сотрудника получены", tasks);
     }
@@ -106,19 +92,10 @@ public class LuvrWebhookController {
     @GetMapping("/employee/{employeeId}/date/{date}")
     public ApiResponse<List<ScheduleEntry>> getByEmployeeAndDate(@PathVariable Long employeeId,
                                                                  @PathVariable String date,
-                                                                 HttpServletRequest httpRequest) {
+                                                                 @AuthenticationPrincipal Jwt jwt) {
 
-        String authHeader = httpRequest.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Basic ")) {
-            return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
-        }
-
-        String base64 = authHeader.substring("Basic ".length());
-        String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-        String email = decoded.split(":", 2)[0];
-
-        Employee employee = employeeRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+        Employee employee = employeeRepository.findByEmail(jwt.getSubject())
+                .orElseThrow(() -> new RuntimeException("Сотрудник не найден"));
 
         if (!employeeRepository.existsById(employeeId)) {
             return new ApiResponse<>(false, "Сотрудник с ID " + employeeId + " не найден");
@@ -143,26 +120,19 @@ public class LuvrWebhookController {
     public ApiResponse<?> updateTaskById(
             @PathVariable Long id,
             @RequestBody ScheduleUpdateRequest request,
-            HttpServletRequest httpRequest
+            @AuthenticationPrincipal Jwt jwt
     ) {
         try {
             ScheduleEntry task = repository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Задача с id=" + id + " не найдена"));
-            String authHeader = httpRequest.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
-            }
-            String base64 = authHeader.substring("Basic ".length());
-            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-            String email = decoded.split(":", 2)[0];
 
-            Employee employee = employeeRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+            Employee employee = employeeRepository.findByEmail(jwt.getSubject())
+                    .orElseThrow(() -> new RuntimeException("Сотрудник не найден"));
 
             if (!task.getEmployeeId().equals(employee.getId())) {
                 return new ApiResponse<>(false, "Задача не принадлежит этому сотруднику");
             }
-            if (!(Objects.equals(task.getViewTask(), "личная"))) {
+            if (!Objects.equals(task.getViewTask(), "личная")) {
                 return new ApiResponse<>(false, "Задача не может быть обновлена: она не личная");
             }
 
@@ -186,26 +156,19 @@ public class LuvrWebhookController {
     @DeleteMapping("/schedule/task/{id}")
     public ApiResponse<?> deleteTaskById(
             @PathVariable Long id,
-            HttpServletRequest httpRequest
+            @AuthenticationPrincipal Jwt jwt
     ) {
         try {
             ScheduleEntry task = repository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Задача с id=" + id + " не найдена"));
-            String authHeader = httpRequest.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
-            }
-            String base64 = authHeader.substring("Basic ".length());
-            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-            String email = decoded.split(":", 2)[0];
 
-            Employee employee = employeeRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+            Employee employee = employeeRepository.findByEmail(jwt.getSubject())
+                    .orElseThrow(() -> new RuntimeException("Сотрудник не найден"));
 
             if (!task.getEmployeeId().equals(employee.getId())) {
                 return new ApiResponse<>(false, "Задача не принадлежит этому сотруднику");
             }
-            if (!(Objects.equals(task.getViewTask(), "личная"))) {
+            if (!Objects.equals(task.getViewTask(), "личная")) {
                 return new ApiResponse<>(false, "Задача не может быть удалена: она не личная");
             }
             repository.delete(task);
@@ -217,28 +180,16 @@ public class LuvrWebhookController {
 
     @GetMapping("/schedule/tasks")
     public ApiResponse<List<ScheduleEntry>> getTasks(
-            HttpServletRequest httpRequest
+            @AuthenticationPrincipal Jwt jwt
     ) {
         try {
-            String authHeader = httpRequest.getHeader("Authorization");
-            if (authHeader == null || !authHeader.startsWith("Basic ")) {
-                return new ApiResponse<>(false, "Ошибка авторизации: отсутствует Basic Auth");
-            }
-            String base64 = authHeader.substring("Basic ".length());
-            String decoded = new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-            String email = decoded.split(":", 2)[0];
-
-            Employee employee = employeeRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Сотрудник с email " + email + " не найден"));
+            Employee employee = employeeRepository.findByEmail(jwt.getSubject())
+                    .orElseThrow(() -> new RuntimeException("Сотрудник не найден"));
 
             List<ScheduleEntry> scheduleEntries = repository.findAll();
-            for(ScheduleEntry scheduleEntry : scheduleEntries){
-                if(!Objects.equals(employee.getId(), scheduleEntry.getEmployeeId())){
-                    if(!Objects.equals(scheduleEntry.getViewTask(), "общая")){
-                        scheduleEntries.remove(scheduleEntry);
-                    }
-                }
-            }
+            scheduleEntries.removeIf(task -> !Objects.equals(employee.getId(), task.getEmployeeId())
+                    && !"общая".equals(task.getViewTask()));
+
             return new ApiResponse<>(true, "Все общедоступные и свои задачи получены", scheduleEntries);
         } catch (Exception e) {
             return new ApiResponse<>(false, "Ошибка получения задач: " + e.getMessage());
