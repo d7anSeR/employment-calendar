@@ -1,5 +1,6 @@
 package com.calendarapi.controller;
 
+import com.calendarapi.dto.AuthResponse;
 import com.calendarapi.dto.EmployeeRequest;
 import com.calendarapi.model.ApiResponse;
 import com.calendarapi.model.Employee;
@@ -25,7 +26,7 @@ public class EmployeeController {
     }
 
     @PostMapping("/employee/auth")
-    public ApiResponse<String> authenticate(@RequestBody EmployeeRequest request) {
+    public ApiResponse<AuthResponse> authenticate(@RequestBody EmployeeRequest request) {
         boolean result = service.authenticate(request.getEmail(), request.getPassword());
         if (!result) {
             return new ApiResponse<>(false, "Неверный email или пароль", null);
@@ -33,7 +34,14 @@ public class EmployeeController {
         Employee employee = EmployeeRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         String token = service.generateToken(request.getEmail(), employee.getRole());
-        return new ApiResponse<>(true, "Аутентификация успешна", token);
+        AuthResponse response = new AuthResponse(
+                employee.getId(),
+                employee.getName(),
+                employee.getEmail(),
+                employee.getRole(),
+                token
+        );
+        return new ApiResponse<>(true, "Аутентификация успешна", response);
     }
 
 
