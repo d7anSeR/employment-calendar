@@ -13,6 +13,8 @@ interface Tip {
   end_date: Date;
   status: string;
   priority: string;
+  task_type: 'personal' | 'work';
+  employeeId: number;
 }
 
 interface TipModalProps {
@@ -29,21 +31,86 @@ const TipModal: React.FC<TipModalProps> = ({ tip, isOpen, onClose }) => {
   };
 
   const getPriorityColor = (priority: string): string => {
-    switch (priority.toLowerCase()) {
-      case 'высокий': return '#f28b82';
-      case 'средний': return '#fbbc04';
-      case 'низкий': return '#34a853';
-      default: return '#4285f4';
+    // Приводим priority к строке и обрабатываем разные форматы
+    const priorityStr = String(priority).trim();
+    
+    // Если это число
+    if (/^\d+$/.test(priorityStr)) {
+      const num = parseInt(priorityStr, 10);
+      switch (num) {
+        case 3: return '#f28b82';
+        case 2: return '#fbbc04';
+        case 1: return '#34a853';
+        default: return '#4285f4';
+      }
+    }
+    
+    // Если это текст
+    const priorityLower = priorityStr.toLowerCase();
+    switch (priorityLower) {
+      case '3':
+      case 'высокий':
+      case 'high':
+        return '#f28b82';
+      case '2':
+      case 'средний':
+      case 'medium':
+        return '#fbbc04';
+      case '1':
+      case 'низкий':
+      case 'low':
+        return '#34a853';
+      default:
+        return '#4285f4';
+    }
+  };
+
+  const getPriorityText = (priority: string): string => {
+    const priorityStr = String(priority).trim();
+    
+    if (/^\d+$/.test(priorityStr)) {
+      const num = parseInt(priorityStr, 10);
+      switch (num) {
+        case 3: return 'высокий';
+        case 2: return 'средний';
+        case 1: return 'низкий';
+        default: return `уровень ${num}`;
+      }
+    }
+    
+    const priorityLower = priorityStr.toLowerCase();
+    if (priorityLower === '3' || priorityLower === 'высокий' || priorityLower === 'high') {
+      return 'высокий';
+    } else if (priorityLower === '2' || priorityLower === 'средний' || priorityLower === 'medium') {
+      return 'средний';
+    } else if (priorityLower === '1' || priorityLower === 'низкий' || priorityLower === 'low') {
+      return 'низкий';
+    } else {
+      return priorityStr;
     }
   };
 
   const getStatusText = (status: string): string => {
-    switch (status.toLowerCase()) {
-      case 'completed': return 'Завершено';
-      case 'in_progress': return 'В работе';
-      case 'pending': return 'Ожидание';
-      default: return status;
+    const statusStr = String(status).toLowerCase();
+    
+    switch (statusStr) {
+      case 'completed':
+      case 'завершено':
+        return 'Завершено';
+      case 'in_progress':
+      case 'в работе':
+        return 'В работе';
+      case 'pending':
+      case 'ожидание':
+        return 'Ожидание';
+      default:
+        return status;
     }
+  };
+
+  
+  const getTaskTypeText = (task_type: string): string => {
+    return task_type === 'personal' ? 'Личная' : 'Рабочая';
   };
 
   return (
@@ -67,7 +134,7 @@ const TipModal: React.FC<TipModalProps> = ({ tip, isOpen, onClose }) => {
 
               <div className={styles.field}>
                 <span className={styles.label}>Контрагент:</span>
-                <span className={styles.value}>{tip.counterparty}</span>
+                <span className={styles.value}>{tip.counterparty || 'Не указан'}</span>
               </div>
 
               <div className={styles.field}>
@@ -76,13 +143,23 @@ const TipModal: React.FC<TipModalProps> = ({ tip, isOpen, onClose }) => {
                   className={styles.priority}
                   style={{ backgroundColor: getPriorityColor(tip.priority) }}
                 >
-                  {tip.priority}
+                  {getPriorityText(tip.priority)}
                 </span>
               </div>
 
               <div className={styles.field}>
                 <span className={styles.label}>Статус:</span>
                 <span className={styles.status}>{getStatusText(tip.status)}</span>
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>Тип задачи:</span>
+                <span
+                  className={styles.taskType}
+                 
+                >
+                  {getTaskTypeText(tip.task_type)}
+                </span>
               </div>
             </div>
           </div>

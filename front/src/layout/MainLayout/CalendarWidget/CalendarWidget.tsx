@@ -1,4 +1,3 @@
-// CalendarWidget.tsx
 import React from 'react';
 import { 
   format, 
@@ -59,21 +58,17 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ onDateSelect }) 
       return;
     }
 
-    // Если передан кастомный обработчик
     if (onDateSelect) {
       onDateSelect(date);
       return;
     }
 
-    // Определяем текущий маршрут
     const isOnDayPage = location.pathname.startsWith('/day/');
     
     if (isOnDayPage) {
-      // На странице дня - переходим на страницу выбранного дня
       const dateString = format(date, 'yyyy-MM-dd');
       navigate(`/day/${dateString}`);
     } else {
-      // На главной странице - выделяем день в недельном view
       dispatch(selectDateAndWeek(date));
     }
   };

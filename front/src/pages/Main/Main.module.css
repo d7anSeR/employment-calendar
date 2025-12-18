@@ -1,4 +1,3 @@
-/* Добавляем стили для header с кнопкой */
 .week-schedule {
   background: white;
   height: 100vh;
@@ -26,7 +25,6 @@
   width: 100%;
 }
 
-/* Кнопка бургер в заголовке */
 .header-burger-button {
   width: 36px;
   height: 36px;
@@ -54,7 +52,6 @@
   padding: 0;
 }
 
-/* Мобильный заголовок для одного дня */
 .mobile-day-header {
   display: flex;
   align-items: center;

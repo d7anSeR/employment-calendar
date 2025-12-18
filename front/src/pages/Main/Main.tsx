@@ -8,7 +8,7 @@ import {
   selectDateAndWeek,
   goToToday 
 } from '../../store/date.slice';
-import useGetTips from '../../hooks/useGetTips';
+import useGetTips from '../../hooks/useGetTasksByEmployee';
 import { useState, useEffect } from 'react';
 import { useEventPositioning } from '../../hooks/useEventPositioning';
 import { useWeekGrid } from '../../hooks/useWeekGrid';
@@ -29,6 +29,7 @@ interface Tip {
   status: string;
   priority: string;
   task_type: 'personal' | 'work';
+  employeeId: number;
 }
 
 interface OutletContext {
@@ -47,6 +48,7 @@ function WeekSchedule() {
   
   const [isMobileDayView, setIsMobileDayView] = useState<boolean>(false);
   
+  // Используем хук без параметров - он сам следит за выбранными сотрудниками
   const { tips, isLoading, error } = useGetTips();
   
   const { getPositionedEvents, getEventPosition, getEventHeight, getEventLeft, getEventWidth } = useEventPositioning();
@@ -102,6 +104,17 @@ function WeekSchedule() {
     });
 
     return getPositionedEvents(eventsInSlot);
+  };
+
+  // Функция для получения текстового представления приоритета
+  const getPriorityText = (priority: string): string => {
+    const priorityNum = parseInt(priority, 10);
+    const priorityMap: Record<number, string> = {
+      1: 'низкий',
+      2: 'средний',
+      3: 'высокий',
+    };
+    return priorityMap[priorityNum] || 'средний';
   };
 
   const currentDayName = format(selectedDate, 'EEEE', { locale: ru });
@@ -171,6 +184,9 @@ function WeekSchedule() {
               <span className={styles["week-range"]}>
                 {weekRange}
                 {isLoading && <span className={styles["loading-indicator"]}> (загрузка...)</span>}
+                {!isLoading && tips.length > 0 && (
+                  <span className={styles["tasks-count"]}> • Задач: {tips.length}</span>
+                )}
               </span>
             )}
           </div>
@@ -181,9 +197,7 @@ function WeekSchedule() {
           ${isMobileDayView ? styles["schedule-grid--mobile"] : ""}
         `}>
           {isMobileDayView ? (
-            // Мобильный режим - один день (ПРАВИЛЬНАЯ СТРУКТУРА)
             <>
-              {/* Строка 1: Уголок и заголовок дня */}
               <div className={styles["corner-cell"]}></div>
               <div 
                 className={`${styles["day-header"]} ${isToday(selectedDate) ? styles["today"] : ""}`}
@@ -221,7 +235,7 @@ function WeekSchedule() {
                           backgroundColor: getEventColor(event.priority, event.task_type)
                         }}
                         onClick={() => handleEventClick(event)}
-                        title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
+                        title={`${event.task_name}\nСотрудник: ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${getPriorityText(event.priority)}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
                       >
                         <div className={styles["event-title"]}>
                           {event.task_name}
@@ -242,9 +256,7 @@ function WeekSchedule() {
               ))}
             </>
           ) : (
-            // Десктопный режим - вся неделя
             <>
-              {/* Строка 1: Уголок и заголовки дней */}
               <div className={styles["corner-cell"]}></div>
               {weekDays.map((day, index) => (
                 <div 
@@ -262,15 +274,12 @@ function WeekSchedule() {
                 </div>
               ))}
 
-              {/* Строки 2-25: Временные слоты и ячейки */}
               {timeSlots.map((slot) => (
                 <React.Fragment key={slot.hour}>
-                  {/* Временной слот */}
                   <div className={styles["time-slot"]}>
                     {slot.time}
                   </div>
                   
-                  {/* Ячейки для каждого дня */}
                   {weekDays.map(day => {
                     const events = getEventsForTimeSlot(day, slot.hourNumber);
                     
@@ -291,7 +300,7 @@ function WeekSchedule() {
                               backgroundColor: getEventColor(event.priority, event.task_type)
                             }}
                             onClick={() => handleEventClick(event)}
-                            title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
+                            title={`${event.task_name}\nСотрудник: ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${getPriorityText(event.priority)}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
                           >
                             <div className={styles["event-title"]}>
                               {event.task_name}
@@ -326,9 +335,22 @@ function WeekSchedule() {
   );
 };
 
-const getEventColor = (priority: string, task_type: 'personal' | 'work'): string => {
+const getEventColor = (
+  priority: string,
+  task_type: 'personal' | 'work'
+): string => {
+  const priorityNum = parseInt(priority, 10);
+  
+  const priorityMap: Record<number, string> = {
+    1: 'низкий',
+    2: 'средний',
+    3: 'высокий',
+  };
+  
+  const priorityLabel = priorityMap[priorityNum] ?? 'средний';
+
   if (task_type === 'personal') {
-    switch (priority.toLowerCase()) {
+    switch (priorityLabel) {
       case 'высокий':
         return '#e66868';
       case 'средний':
@@ -339,8 +361,8 @@ const getEventColor = (priority: string, task_type: 'personal' | 'work'): string
         return '#8b5cf6';
     }
   }
-  
-  switch (priority.toLowerCase()) {
+
+  switch (priorityLabel) {
     case 'высокий':
       return '#f28b82';
     case 'средний':

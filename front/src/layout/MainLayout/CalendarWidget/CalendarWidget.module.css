@@ -67,12 +67,12 @@
 }
 
 .day-cell.selected {
-  background-color: #1a73e8;
+  background-color: #1669d9;
   color: white;
 }
 
 .day-cell.selected:hover {
-  background-color: #1557b0;
+  background-color: #1669d9;
   color: white;
 }
 

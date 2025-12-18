@@ -9,6 +9,7 @@ interface Tip {
   status: string;
   priority: string;
   task_type: "personal" | "work";
+  employeeId: number;
 }
 
 interface PositionedTip extends Tip {

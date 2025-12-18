@@ -1,10 +1,9 @@
-
 import { format, parseISO, startOfDay, isToday } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import styles from './DayPage.module.css';
 import { useDispatch } from 'react-redux';
 import { selectDateAndWeek } from '../../store/date.slice';
-import useGetTips from '../../hooks/useGetTips';
+import useGetTips from '../../hooks/useGetTasksByEmployee';
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useOutletContext } from 'react-router-dom';
 import TipModal from '../Main/TipModalWindow/TipModalWindow';
@@ -23,6 +22,7 @@ interface Tip {
   status: string;
   priority: string;
   task_type: 'personal' | 'work';
+  employeeId: number;
 }
 
 interface OutletContext {
@@ -37,6 +37,7 @@ function DaySchedule() {
   
   const { isSidebarOpen, toggleSidebar, isMobileLayout } = useOutletContext<OutletContext>();
   
+  // Используем хук без параметров - он сам следит за выбранными сотрудниками
   const { tips, isLoading, error } = useGetTips();
   
   const { getPositionedEvents, getEventPosition, getEventHeight, getEventLeft, getEventWidth } = useEventPositioning();
@@ -102,6 +103,17 @@ function DaySchedule() {
     return getPositionedEvents(eventsInSlot);
   };
 
+  // Функция для получения текстового представления приоритета
+  const getPriorityText = (priority: string): string => {
+    const priorityNum = parseInt(priority, 10);
+    const priorityMap: Record<number, string> = {
+      1: 'низкий',
+      2: 'средний',
+      3: 'высокий',
+    };
+    return priorityMap[priorityNum] || 'средний';
+  };
+
   const handleEventClick = (tip: Tip) => {
     setSelectedTip(tip);
     setIsModalOpen(true);
@@ -111,7 +123,6 @@ function DaySchedule() {
     setIsModalOpen(false);
     setSelectedTip(null);
   };
-
 
   const isCurrentDay = isToday(selectedDate);
   const dayAbbreviation = format(selectedDate, 'EEEEEE', { locale: ru }).toUpperCase();
@@ -135,7 +146,7 @@ function DaySchedule() {
           <div className={styles["header-content"]}>
             {isMobileLayout && !isSidebarOpen && (
               <button 
-                className={styles["header-burger-button"]}
+                className={styles["day-header-burger-button"]}
                 onClick={toggleSidebar}
                 title="Открыть панель"
               >
@@ -143,23 +154,23 @@ function DaySchedule() {
               </button>
             )}
             
-            <Link to="/" className={styles["back-button"]}>
+            <Link to="/" className={styles["day-back-button"]}>
               ← Назад к неделе
             </Link>
             
-            <div className={styles["center-content"]}>
-              <div className={styles["mobile-day-info"]}>
-                <div className={styles["mobile-day-name"]}>
+            <div className={styles["day-header-center"]}>
+              <div className={styles["day-info"]}>
+                <div className={styles["day-name"]}>
                   {currentDayName.charAt(0).toUpperCase() + currentDayName.slice(1)}
                 </div>
-                <div className={styles["mobile-day-date"]}>
+                <div className={styles["day-date"]}>
                   {currentDate}
                 </div>
               </div>
             </div>
 
-            <div className={styles["events-count"]}>
-              Заметок: {dayTips.length}
+            <div className={styles["day-events-count"]}>
+              Задач: {dayTips.length}
               {isLoading && <span className={styles["loading-indicator"]}> (загрузка...)</span>}
             </div>
           </div>
@@ -168,12 +179,12 @@ function DaySchedule() {
         <div className={styles["schedule-grid"]}>
           <div className={styles["corner-cell"]}></div>
           <div 
-            className={`${styles["day-header"]} ${isCurrentDay ? styles["today"] : ""}`}
+            className={`${styles["day-header-grid-cell"]} ${isCurrentDay ? styles["today"] : ""}`}
           >
             <div className={styles["day-abbreviation"]}>
               {dayAbbreviation}
             </div>
-            <div className={styles["day-date"]}>
+            <div className={styles["day-date-grid"]}>
               {format(selectedDate, 'd', { locale: ru })}
             </div>
           </div>
@@ -203,7 +214,7 @@ function DaySchedule() {
                       backgroundColor: getEventColor(event.priority, event.task_type)
                     }}
                     onClick={() => handleEventClick(event)}
-                    title={`${event.task_name} - ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${event.priority}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
+                    title={`${event.task_name}\nСотрудник: ${event.employee_name}\n${format(event.start_date, 'HH:mm')}-${format(event.end_date, 'HH:mm')}\nПриоритет: ${getPriorityText(event.priority)}\nТип: ${event.task_type === 'personal' ? 'Личная' : 'Рабочая'}`}
                   >
                     <div className={styles["event-title"]}>
                       {event.task_name}
@@ -232,11 +243,21 @@ function DaySchedule() {
       />
     </>
   );
-};
+}
 
 const getEventColor = (priority: string, task_type: 'personal' | 'work'): string => {
+  const priorityNum = parseInt(priority, 10);
+  
+  const priorityMap: Record<number, string> = {
+    1: 'низкий',
+    2: 'средний',
+    3: 'высокий',
+  };
+  
+  const priorityLabel = priorityMap[priorityNum] ?? 'средний';
+
   if (task_type === 'personal') {
-    switch (priority.toLowerCase()) {
+    switch (priorityLabel) {
       case 'высокий':
         return '#e66868';
       case 'средний':
@@ -247,16 +268,16 @@ const getEventColor = (priority: string, task_type: 'personal' | 'work'): string
         return '#8b5cf6';
     }
   }
-  
-  switch (priority.toLowerCase()) {
+
+  switch (priorityLabel) {
     case 'высокий':
       return '#f28b82';
     case 'средний':
-        return '#fbbc04';
-      case 'низкий':
-        return '#34a853';
-      default:
-        return '#4285f4';
+      return '#fbbc04';
+    case 'низкий':
+      return '#34a853';
+    default:
+      return '#4285f4';
   }
 };
 

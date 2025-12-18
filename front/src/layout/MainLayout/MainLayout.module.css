@@ -4,7 +4,6 @@
   position: relative;
 }
 
-/* Контейнер для кнопок в правом верхнем углу сайдбара */
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -14,7 +13,133 @@
   position: relative;
 }
 
-/* Кнопка логина */
+.user-container {
+  position: relative;
+  width: 100%;
+}
+
+.user-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.user-button:hover {
+  background-color: #f0f0f0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-initials {
+  width: 34px;
+  height: 34px;
+  background: #1669d9;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.user-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  min-width: 240px;
+  margin-top: 8px;
+  z-index: 1002;
+  animation: slideDown 0.2s ease-out;
+  border: 1px solid #e8e8e8;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-header {
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+  border-radius: 8px 8px 0 0;
+}
+
+.dropdown-name {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.dropdown-email {
+  font-size: 12px;
+  color: #666;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 8px 16px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  width: 100%;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #333;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  text-align: left;
+}
+
+.dropdown-item:hover {
+  background-color: #f5f5f5;
+}
+
+.dropdown-item svg {
+  font-size: 16px;
+  color: #666;
+  width: 16px;
+  height: 16px;
+}
+
 .auth_button {
   display: flex;
   align-items: center;
@@ -31,10 +156,9 @@
 
 .auth_button:hover {
   background-color: #f5f5f5;
-  border-color: #40a9ff;
+  border-color: #1669d9;
 }
 
-/* Бургер кнопка в сайдбаре */
 .sidebar-burger-button {
   width: 36px;
   height: 36px;
@@ -50,10 +174,9 @@
 
 .sidebar-burger-button:hover {
   background: #f5f5f5;
-  border-color: #40a9ff;
+  border-color: #1669d9;
 }
 
-/* Сайдбар */
 .sidebar {
   padding: 30px;
   border-right: 1px solid #e8e8e8;
@@ -79,7 +202,6 @@
   transform: translateX(-100%);
 }
 
-/* Основной контент */
 .content {
   flex: 1;
   margin-left: 280px;
@@ -91,13 +213,11 @@
   overflow: hidden;
 }
 
-/* При закрытом сайдбаре на мобильных */
 .content--full {
   margin-left: 0 !important;
   width: 100% !important;
 }
 
-/* Адаптивные стили */
 @media (min-width: 1401px) {
   .sidebar {
     position: fixed;
@@ -123,9 +243,22 @@
   .sidebar {
     position: fixed;
   }
+
+  .user-dropdown {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 300px;
+    z-index: 1003;
+  }
+
+  .user-name {
+    max-width: 150px;
+  }
 }
 
-/* Затемнение фона при открытом сайдбаре на мобильных */
 @media (max-width: 1400px) {
   .sidebar--open ~ .content::before {
     content: "";
@@ -149,7 +282,6 @@
   }
 }
 
-/* Остальные стили сайдбара */
 .sidebar__date {
   display: flex;
   margin-top: 0;

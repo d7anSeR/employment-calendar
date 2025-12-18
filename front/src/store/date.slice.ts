@@ -6,6 +6,8 @@ import {
   addMonths,
   subMonths,
   startOfMonth,
+  addDays,
+  subDays,
 } from "date-fns";
 
 interface DateState {
@@ -50,6 +52,16 @@ export const dateSlice = createSlice({
       state.selectedDate = prevWeek.toISOString();
       state.currentDate = startOfMonth(prevWeek).toISOString();
     },
+    goToNextDay: (state) => {
+      const selectedDate = new Date(state.selectedDate);
+      const nextDay = addDays(selectedDate, 1);
+      state.selectedDate = nextDay.toISOString();
+    },
+    goToPrevDay: (state) => {
+      const selectedDate = new Date(state.selectedDate);
+      const prevDay = subDays(selectedDate, 1);
+      state.selectedDate = prevDay.toISOString();
+    },
     setCurrentWeek: (state, action: PayloadAction<Date>) => {
       state.currentWeek = action.payload.toISOString();
     },
@@ -80,6 +92,8 @@ export const {
   goToToday,
   goToNextWeek,
   goToPrevWeek,
+  goToNextDay,
+  goToPrevDay,
   setCurrentWeek,
   selectDateAndWeek,
   goToNextMonth,

@@ -1,9 +1,10 @@
 .day-schedule {
   background: white;
-  height: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
 }
 
 .schedule-header {
@@ -11,16 +12,18 @@
   border-bottom: 1px solid #e0e0e0;
   background: #f8f9fa;
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .header-content {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
 }
 
-.header-burger-button {
+.day-header-burger-button {
   background: white;
   border: 1px solid #dadce0;
   border-radius: 4px;
@@ -35,12 +38,13 @@
   flex-shrink: 0;
 }
 
-.header-burger-button:hover {
+.day-header-burger-button:hover {
   background: #f8f9fa;
   border-color: #c4c7c5;
 }
 
-.back-button {
+/* ВОЗВРАЩАЕМ кнопку "Назад к неделе" */
+.day-back-button {
   color: #1a73e8;
   text-decoration: none;
   font-size: 14px;
@@ -55,40 +59,41 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 }
 
-.back-button:hover {
+.day-back-button:hover {
   background-color: #e8f0fe;
 }
 
-.center-content {
+.day-header-center {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.mobile-day-info {
+.day-info {
   display: flex;
   flex-direction: column;
   align-items: center;
   min-width: 120px;
 }
 
-.mobile-day-name {
+.day-name {
   font-size: 16px;
   font-weight: 500;
   color: #3c4043;
   white-space: nowrap;
 }
 
-.mobile-day-date {
+.day-date {
   font-size: 14px;
   color: #5f6368;
   white-space: nowrap;
 }
 
-.events-count {
+.day-events-count {
   font-size: 14px;
   color: #5f6368;
   background: white;
@@ -110,9 +115,12 @@
   display: grid;
   grid-template-columns: 60px 1fr;
   grid-template-rows: 50px repeat(24, 1fr);
-  overflow-x: hidden;
   flex: 1;
   position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 .corner-cell {
@@ -122,10 +130,10 @@
   position: sticky;
   left: 0;
   top: 0;
-  z-index: 2;
+  z-index: 10;
 }
 
-.day-header {
+.day-header-grid-cell {
   background: #f8f9fa;
   border-right: 1px solid #e0e0e0;
   border-bottom: 1px solid #e0e0e0;
@@ -136,10 +144,10 @@
   gap: 2px;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 10;
 }
 
-.day-header.today {
+.day-header-grid-cell.today {
   background: #e8f0fe;
   color: #1a73e8;
 }
@@ -150,17 +158,17 @@
   color: #3c4043;
 }
 
-.day-header.today .day-abbreviation {
+.day-header-grid-cell.today .day-abbreviation {
   color: #1a73e8;
 }
 
-.day-date {
+.day-date-grid {
   font-size: 16px;
   font-weight: 400;
   color: #5f6368;
 }
 
-.day-header.today .day-date {
+.day-header-grid-cell.today .day-date-grid {
   color: #1a73e8;
   font-weight: 500;
 }
@@ -177,7 +185,7 @@
   padding-right: 8px;
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: 5;
   min-height: 50px;
 }
 
@@ -187,6 +195,7 @@
   min-height: 50px;
   position: relative;
   background: white;
+  width: 100%;
 }
 
 .time-slot:last-child {
@@ -210,11 +219,13 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.2s;
   min-width: 100px;
+  max-width: calc(100% - 4px);
+  margin: 0 2px;
 }
 
 .event:hover {
   opacity: 0.95;
-  z-index: 3;
+  z-index: 20;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   transform: translateY(-1px);
 }
@@ -245,7 +256,8 @@
   line-height: 1.2;
 }
 
-.event-badge {
+.event-personal-badge,
+.event-work-badge {
   font-size: 9px;
   padding: 2px 6px;
   border-radius: 10px;
@@ -254,14 +266,6 @@
   font-weight: 500;
   backdrop-filter: blur(4px);
   background: rgba(255, 255, 255, 0.25);
-}
-
-.event-personal-badge {
-  color-scheme: event-badge;
-}
-
-.event-work-badge {
-  color-scheme: event-badge;
 }
 
 .error-message {
@@ -276,22 +280,9 @@
   font-size: 15px;
 }
 
-.schedule-grid::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.schedule-grid::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-.schedule-grid::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.schedule-grid::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+.day-schedule * {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
@@ -303,34 +294,34 @@
     gap: 12px;
   }
 
-  .header-burger-button {
+  .day-header-burger-button {
     width: 32px;
     height: 32px;
   }
 
-  .back-button {
+  .day-back-button {
     padding: 6px 8px;
     font-size: 13px;
   }
 
-  .center-content {
+  .day-header-center {
     flex: 1;
     min-width: 0;
   }
 
-  .mobile-day-info {
+  .day-info {
     min-width: 100px;
   }
 
-  .mobile-day-name {
+  .day-name {
     font-size: 14px;
   }
 
-  .mobile-day-date {
+  .day-date {
     font-size: 13px;
   }
 
-  .events-count {
+  .day-events-count {
     font-size: 13px;
     padding: 5px 10px;
   }
@@ -346,7 +337,7 @@
     min-height: 42px;
   }
 
-  .day-header {
+  .day-header-grid-cell {
     padding: 4px;
   }
 
@@ -354,7 +345,7 @@
     font-size: 11px;
   }
 
-  .day-date {
+  .day-date-grid {
     font-size: 14px;
   }
 
@@ -376,7 +367,8 @@
     font-size: 9px;
   }
 
-  .event-badge {
+  .event-personal-badge,
+  .event-work-badge {
     font-size: 8px;
     padding: 1px 4px;
   }
@@ -391,29 +383,29 @@
     gap: 8px;
   }
 
-  .header-burger-button {
+  .day-header-burger-button {
     width: 28px;
     height: 28px;
   }
 
-  .back-button {
+  .day-back-button {
     padding: 4px 6px;
     font-size: 12px;
   }
 
-  .mobile-day-info {
+  .day-info {
     min-width: 90px;
   }
 
-  .mobile-day-name {
+  .day-name {
     font-size: 13px;
   }
 
-  .mobile-day-date {
+  .day-date {
     font-size: 12px;
   }
 
-  .events-count {
+  .day-events-count {
     font-size: 12px;
     padding: 4px 8px;
   }
