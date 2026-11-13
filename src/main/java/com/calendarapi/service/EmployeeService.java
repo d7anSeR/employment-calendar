@@ -1,12 +1,11 @@
 package com.calendarapi.service;
 
-import com.calendarapi.dto.EmployeeRequest;
-import com.calendarapi.dto.EmployeeUpdateRequest;
+import com.calendarapi.dto.EmployeeDto;
+import com.calendarapi.mapping.EmployeeMapper;
 import com.calendarapi.model.Employee;
 import com.calendarapi.repository.EmployeeRepository;
 import com.calendarapi.security.SecurityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
@@ -18,23 +17,22 @@ import java.time.Instant;
 import java.util.List;
 
 
-
 @Service
 public class EmployeeService {
 
     private final EmployeeRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
-    private static final Logger log =
-            LoggerFactory.getLogger(EmployeeService.class);
+    private final EmployeeMapper mapper;
     String actor = SecurityUtils.currentUser();
 
     public EmployeeService(EmployeeRepository repository,
                            PasswordEncoder passwordEncoder,
-                           JwtEncoder jwtEncoder) {
+                           JwtEncoder jwtEncoder, EmployeeMapper mapper) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
+        this.mapper = mapper;
     }
 
     public String generateToken(String email, String role) {
@@ -46,7 +44,6 @@ public class EmployeeService {
                 .expiresAt(now.plusSeconds(43200))
                 .subject(email)
                 .build();
-        log.info("JWT ISSUED | email={} | role={}", email, role);
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
 
     }
@@ -55,26 +52,27 @@ public class EmployeeService {
         return repository.findByEmail(email)
                 .map(employee -> {
                     boolean match = passwordEncoder.matches(rawPassword, employee.getPassword());
-                    if (match) {
-                        log.info("SUCCESS LOGIN | email={}", email);
-                    } else {
-                        log.warn("FAILED LOGIN | email={}", email);
-                    }
                     return match;
                 })
-                .orElseGet(() -> {
-                    log.warn("FAILED LOGIN | email={} | reason=NOT_FOUND", email);
-                    return false;
-                });
+                .orElseGet(() -> { return false;});
+    }
+
+    public EmployeeDto findByEmail(String email) {
+        return repository.findByEmail(email)
+                .map(mapper::toDto)
+                .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
+    }
+
+    public List<EmployeeDto> findAll() {
+        return repository.findAll().stream()
+                .map(mapper::toDto)
+                .toList();
     }
 
     @Transactional
-    public Employee createEmployee(EmployeeRequest request) {
-        if (repository.findByEmail(request.getEmail()).isPresent()) {
+    public Employee createEmployee(Employee request) {
+        if (existEmployee(request)) {
             throw new RuntimeException("Пользователь с таким email уже существует");
-        }
-        if (repository.findById(request.getId()).isPresent()) {
-            throw new RuntimeException("Пользователь с таким id уже существует");
         }
 
         Employee employee = new Employee();
@@ -84,13 +82,12 @@ public class EmployeeService {
         employee.setEmail(request.getEmail());
         employee.setPassword(passwordEncoder.encode(request.getPassword()));
         employee.setRole(request.getRole());
-        log.info("EMPLOYEE CREATED | by=ADMIN | email={} | targetEmail={} | targetId={}",
-                actor, request.getEmail(), request.getId());
-        return repository.save(employee);
+        repository.save(employee);
+        return request;
     }
 
     @Transactional
-    public Employee updateEmployee(EmployeeUpdateRequest request) {
+    public Employee updateEmployee(Employee request) {
         Employee employee = repository.findById(request.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь с таким id не найден"));
         if (request.getName() != null && !request.getName().isEmpty()) {
@@ -105,17 +102,16 @@ public class EmployeeService {
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
             employee.setPassword(passwordEncoder.encode(request.getPassword()));
         }
-        log.info("EMPLOYEE UPDATE | by=ADMIN | email={} | targetEmail={} | targetId={}",
-                actor, request.getEmail(), request.getId());
 
         return repository.save(employee);
     }
+    private boolean existEmployee(Employee employee){
+        return repository.findByEmail(employee.getEmail()).isPresent();
+    }
 
-    public void deleteEmployee(EmployeeUpdateRequest request) {
-        Employee employee = repository.findById(request.getId())
-                .orElseThrow(() -> new RuntimeException("Пользователь с таким id не найден"));
-        repository.delete(employee);
-        log.info("EMPLOYEE DELETE | by=ADMIN | email={} | targetEmail={} | targetId={}",
-                actor, request.getEmail(), request.getId());
+    public void deleteEmployee(Employee employee) {
+        if (!existEmployee(employee))
+            new RuntimeException("Пользователь с таким id не найден");
+        repository.save(employee);
     }
 }

@@ -1,30 +1,34 @@
 package com.calendarapi.model;
 
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
+@AllArgsConstructor
 @Entity
 @Table(name = "schedule_entry")
 public class ScheduleEntry {
     @Id
-    @NotNull(message = "Поле id задачи обязательно")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "employee_id")
-    //@NotNull(message = "Поле для идентификации сотрудника обязательно")
-    private Long employeeId;
-
-    @Column(name = "task_name")
+    @Column(name = "task_name", nullable = false)
+    @NotBlank
     private String taskName;
 
-    @Column(name = "task_description")
+    @Column(name = "task_description", nullable = false)
+    @NotBlank
     private String taskDescription;
 
-    @Column(name = "counterparty")
+    @Column(name = "counterparty", nullable = false)
+    @NotBlank
     private String counterparty;
 
     @Column(name = "start_date")
@@ -36,91 +40,15 @@ public class ScheduleEntry {
     private LocalDateTime endDate;
 
     @Column(name = "status")
-    private int status = 1;
+    private StatusShedule status;
 
     @Column(name = "priority")
-    private int priority = 1;
+    private PriorityShedule priority;
 
     @Column(name = "view_task", nullable = false)
-    private String viewTask = "общая";
+    private boolean viewTask;
 
-    public void setEmployeeId(Long employeeId) {
-        this.employeeId = employeeId;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setStart(LocalDateTime start) {
-        this.startDate = start;
-    }
-
-    public void setEnd(LocalDateTime end) {
-        this.endDate = end;
-    }
-
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
-    }
-
-    public void setTaskDescription(String taskDescription) {
-        this.taskDescription = taskDescription;
-    }
-
-    public void setPriority(int priority) {
-        this.priority = priority;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public void setCounterparty(String counterparty) {
-        this.counterparty = counterparty;
-    }
-
-    public void setViewTask(String viewTask) {
-        this.viewTask = viewTask;
-    }
-
-    public int getPriority() {
-        return priority;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Long getEmployeeId() {
-        return employeeId;
-    }
-
-    public LocalDateTime getStart() {
-        return startDate;
-    }
-
-    public LocalDateTime getEnd() {
-        return endDate;
-    }
-
-    public String getTaskName() {
-        return taskName;
-    }
-
-    public String getTaskDescription() {
-        return taskDescription;
-    }
-
-    public String getCounterparty() {
-        return counterparty;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public String getViewTask() {
-        return viewTask;
-    }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    private Employee employee;
 }

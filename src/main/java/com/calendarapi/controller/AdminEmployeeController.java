@@ -1,8 +1,6 @@
 package com.calendarapi.controller;
 
-import com.calendarapi.dto.EmployeeRequest;
-import com.calendarapi.dto.EmployeeUpdateRequest;
-import com.calendarapi.model.ApiResponse;
+import com.calendarapi.dto.EmployeeDto;
 import com.calendarapi.model.Employee;
 import com.calendarapi.service.EmployeeService;
 import jakarta.validation.Valid;
@@ -10,7 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/webhook/employee")
+@RequestMapping("/api/admin")
 public class AdminEmployeeController {
 
     private final EmployeeService service;
@@ -20,14 +18,14 @@ public class AdminEmployeeController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/create")
-    public ApiResponse<?> create(@Valid @RequestBody EmployeeRequest request) {
+    @PostMapping
+    public ApiResponse<?> create(@Valid @RequestBody EmployeeDto request) {
         Employee employee = service.createEmployee(request);
         return new ApiResponse<>(true, "Пользователь создан", employee);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("/update")
+    @PatchMapping
     public ApiResponse<Employee> update(
             @Valid @RequestBody EmployeeUpdateRequest request
     ) {
@@ -36,7 +34,7 @@ public class AdminEmployeeController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/delete")
+    @DeleteMapping
     public ApiResponse<?> delete(@Valid @RequestBody EmployeeUpdateRequest request) {
         service.deleteEmployee(request);
         return new ApiResponse<>(true, "Пользователь удален");

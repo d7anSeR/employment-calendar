@@ -1,6 +1,5 @@
 package com.calendarapi.exception;
 
-import com.calendarapi.model.ApiResponse;
 import com.calendarapi.security.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

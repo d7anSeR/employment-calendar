@@ -1,5 +1,6 @@
 package com.calendarapi.service;
 
+import com.calendarapi.dto.EmployeeDto;
 import com.calendarapi.model.Employee;
 import com.calendarapi.repository.EmployeeRepository;
 import org.springframework.security.core.userdetails.User;
@@ -28,4 +29,3 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .build();
     }
 }
-

@@ -1,10 +1,8 @@
 package com.calendarapi.controller;
 
-import com.calendarapi.dto.AuthResponse;
-import com.calendarapi.dto.EmployeeRequest;
-import com.calendarapi.model.ApiResponse;
+import com.calendarapi.dto.AuthDto;
+import com.calendarapi.dto.EmployeeDto;
 import com.calendarapi.model.Employee;
-import com.calendarapi.repository.EmployeeRepository;
 import com.calendarapi.service.EmployeeService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -13,28 +11,25 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/webhook")
+@RequestMapping("/api/auth")
 public class EmployeeController {
 
-    private final EmployeeRepository EmployeeRepository;
     private final EmployeeService service;
 
-    public EmployeeController(EmployeeRepository EmployeeRepository,
-                              EmployeeService service) {
-        this.EmployeeRepository = EmployeeRepository;
+    public EmployeeController(EmployeeService service) {
         this.service = service;
     }
 
-    @PostMapping("/employee/auth")
-    public ApiResponse<AuthResponse> authenticate(@RequestBody EmployeeRequest request) {
+    @PostMapping
+    public ApiResponse<AuthDto> authenticate(@RequestBody EmployeeDto request) {
         boolean result = service.authenticate(request.getEmail(), request.getPassword());
         if (!result) {
             return new ApiResponse<>(false, "Неверный email или пароль", null);
         }
-        Employee employee = EmployeeRepository.findByEmail(request.getEmail())
+        Employee employee = service.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         String token = service.generateToken(request.getEmail(), employee.getRole());
-        AuthResponse response = new AuthResponse(
+        AuthDto response = new AuthDto(
                 employee.getId(),
                 employee.getName(),
                 employee.getEmail(),
@@ -45,11 +40,11 @@ public class EmployeeController {
     }
 
 
-    @GetMapping("/employees")
+    @GetMapping
     public ApiResponse<List<Employee>> getAllEmployees(@AuthenticationPrincipal Jwt jwt) {
-        Employee employee = EmployeeRepository.findByEmail(jwt.getSubject())
+        Employee employee = service.findByEmail(jwt.getSubject())
                 .orElseThrow(() -> new RuntimeException("Сотрудник не найден"));
-        List<Employee> employees = EmployeeRepository.findAll();
+        List<Employee> employees = service.findAll();
         return new ApiResponse<>(true, "Список сотрудников получен", employees);
     }
 }
